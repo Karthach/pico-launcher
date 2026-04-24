@@ -22,6 +22,8 @@ public:
     virtual void HideGameInfo() = 0;
     virtual void ShowDisplaySettings() = 0;
     virtual void HideDisplaySettings() = 0;
+    virtual void ShowThemeSettings() = 0;
+    virtual void HideThemeSettings() = 0;
 
     virtual void Update() = 0;
 

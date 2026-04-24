@@ -60,6 +60,25 @@ void RomBrowserController::HideDisplaySettings()
     _stateMachine.Fire(RomBrowserStateTrigger::HideDisplaySettings);
 }
 
+void RomBrowserController::ShowThemeSettings()
+{
+    _stateMachine.Fire(RomBrowserStateTrigger::ShowThemeSettings);
+}
+
+void RomBrowserController::HideThemeSettings()
+{
+    if (_saveSettingsPending)
+    {
+        _saveSettingsPending = false;
+        _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
+        {
+            _appSettingsService->Save();
+            return TaskResult<void>::Completed();
+        });
+    }
+    _stateMachine.Fire(RomBrowserStateTrigger::HideThemeSettings);
+}
+
 void RomBrowserController::SetRomBrowserDisplaySettings(
     const RomBrowserDisplaySettings& romBrowserDisplaySettings)
 {

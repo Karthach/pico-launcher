@@ -21,8 +21,10 @@
 #include "themes/material/MaterialColorScheme.h"
 #include "romBrowser/viewModels/RomBrowserBottomScreenViewModel.h"
 #include "romBrowser/viewModels/DisplaySettingsViewModel.h"
+#include "romBrowser/viewModels/ThemeSettingsViewModel.h"
 #include "romBrowser/views/RomBrowserBottomScreenView.h"
 #include "romBrowser/views/RomBrowserTopScreenView.h"
+#include "romBrowser/views/ThemeSettingsBottomSheetView.h"
 #include "romBrowser/views/IconButton2DView.h"
 #include "romBrowser/views/ChipView.h"
 #include "romBrowser/Theme/Material/MaterialThemeFileIconFactory.h"
@@ -87,6 +89,7 @@ private:
     RomBrowserController _romBrowserController;
 
     DisplaySettingsViewModel _displaySettingsBottomSheetViewModel;
+    ThemeSettingsViewModel _themeSettingsBottomSheetViewModel;
 
     FocusManager _focusManager;
 
@@ -96,12 +99,16 @@ private:
 
     DialogPresenter _dialogPresenter;
 
+    VramState _vramStateBeforeTheme;
     VramState _vramStateBeforeMakeBottomScreenView;
     VramState _vramStateAfterMakeBottomScreenView;
     bool _changeDisplayMode = false;
+    bool _changeTheme = false;
 
     ChipView::VramToken _chipViewVram;
     IconButton2DView::VramToken _iconButtonViewVram;
+
+    String<char, 64> _currentThemeName;
 
     bool _vcountIrqStarted = false;
 
@@ -117,6 +124,8 @@ private:
     void HandleHideGameInfoTrigger();
     void HandleShowDisplaySettingsTrigger();
     void HandleHideDisplaySettingsTrigger();
+    void HandleShowThemeSettingsTrigger();
+    void HandleHideThemeSettingsTrigger();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
     void HandleChangeDisplayModeTrigger(RomBrowserState newState);

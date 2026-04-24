@@ -28,6 +28,8 @@ public:
     void HideGameInfo() override;
     void ShowDisplaySettings() override;
     void HideDisplaySettings() override;
+    void ShowThemeSettings() override;
+    void HideThemeSettings() override;
 
     void Update() override;
 
