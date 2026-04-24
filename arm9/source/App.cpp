@@ -183,7 +183,7 @@ void App::Run()
         return TaskResult<void>::Completed();
     });
 
-    _fadeAnimator = Animator(16, 0, 16, &md::sys::motion::easing::linear);
+    _fadeAnimator = Animator(16, 0, 16, &md::sys::motion::easing::emphasized);
 
     MainLoop();
 
@@ -243,7 +243,7 @@ void App::MainLoop()
 
 void App::Exit()
 {
-    _fadeAnimator.Goto(16, 16, &md::sys::motion::easing::linear);
+    _fadeAnimator.Goto(16, 16, &md::sys::motion::easing::emphasized);
     _exit = true;
 }
 

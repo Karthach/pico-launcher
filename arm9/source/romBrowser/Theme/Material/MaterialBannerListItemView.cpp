@@ -32,9 +32,19 @@ void MaterialBannerListItemView::Draw(GraphicsContext& graphicsContext)
         return;
 
     auto backColor = _materialColorScheme->inverseOnSurface;
-    auto frontColor = _isFocused
+    bool isPressed = _inputHandler.IsPenDown();
+    auto frontColor = (_isFocused || isPressed)
         ? _materialColorScheme->mainIconBg
         : _materialColorScheme->surfaceBright;
+
+    int drawX = _position.x;
+    int drawY = _position.y;
+    if (isPressed)
+    {
+        drawX += 1;
+        drawY += 1;
+    }
+
     u16 bgPltt[16];
     for (int i = 0; i < 16; i++)
     {
@@ -47,35 +57,35 @@ void MaterialBannerListItemView::Draw(GraphicsContext& graphicsContext)
         bgPltt[i] = ColorConverter::ToGBGR565(palColor);
     }
     u32 bgPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
-        DirectPalette(bgPltt), _position.y - 2, _position.y - 2 + 48);
+        DirectPalette(bgPltt), drawY - 2, drawY - 2 + 48);
 
     gfx_oam_entry_t* oam = graphicsContext.GetOamManager().AllocOams(4);
     OamBuilder::OamWithSize<64, 64>(
-            _position.x - 2,
-            _position.y - 2, _bgVramOffset >> 7)
+            drawX - 2,
+            drawY - 2, _bgVramOffset >> 7)
         .WithPalette16(bgPaletteRow)
         .WithPriority(graphicsContext.GetPriority())
         .Build(oam[0]);
     OamBuilder::OamWithSize<64, 64>(
-            _position.x - 2 + 64,
-            _position.y - 2, (_bgVramOffset + bannerListItemBg0TilesLen) >> 7)
+            drawX - 2 + 64,
+            drawY - 2, (_bgVramOffset + bannerListItemBg0TilesLen) >> 7)
         .WithPalette16(bgPaletteRow)
         .WithPriority(graphicsContext.GetPriority())
         .Build(oam[1]);
     OamBuilder::OamWithSize<64, 64>(
-            _position.x - 2 + 64 + 64,
-            _position.y - 2, (_bgVramOffset + bannerListItemBg0TilesLen) >> 7)
+            drawX - 2 + 64 + 64,
+            drawY - 2, (_bgVramOffset + bannerListItemBg0TilesLen) >> 7)
         .WithPalette16(bgPaletteRow)
         .WithPriority(graphicsContext.GetPriority())
         .Build(oam[2]);
     OamBuilder::OamWithSize<32, 64>(
-            _position.x - 2 + 64 + 64 + 64,
-            _position.y - 2, (_bgVramOffset + bannerListItemBg0TilesLen + bannerListItemBg1TilesLen) >> 7)
+            drawX - 2 + 64 + 64 + 64,
+            drawY - 2, (_bgVramOffset + bannerListItemBg0TilesLen + bannerListItemBg1TilesLen) >> 7)
         .WithPalette16(bgPaletteRow)
         .WithPriority(graphicsContext.GetPriority())
         .Build(oam[3]);
 
-    if (_isFocused)
+    if (_isFocused || isPressed)
     {
         _firstLine->SetBackgroundColor(frontColor);
         _firstLine->SetForegroundColor(_materialColorScheme->onSecondaryContainer);
@@ -96,18 +106,18 @@ void MaterialBannerListItemView::Draw(GraphicsContext& graphicsContext)
 
     if (_lines == 1)
     {
-        _firstLine->SetPosition(_position.x + 6 + 32 + 6, _position.y + 14);
+        _firstLine->SetPosition(drawX + 6 + 32 + 6, drawY + 14);
     }
     else if (_lines == 2)
     {
-        _firstLine->SetPosition(_position.x + 6 + 32 + 6, _position.y + 8);
-        _secondLine->SetPosition(_position.x + 6 + 32 + 6, _position.y + 20);
+        _firstLine->SetPosition(drawX + 6 + 32 + 6, drawY + 8);
+        _secondLine->SetPosition(drawX + 6 + 32 + 6, drawY + 20);
     }
     else
     {
-        _firstLine->SetPosition(_position.x + 6 + 32 + 6, _position.y + 2);
-        _secondLine->SetPosition(_position.x + 6 + 32 + 6, _position.y + 14);
-        _thirdLine->SetPosition(_position.x + 6 + 32 + 6, _position.y + 26);
+        _firstLine->SetPosition(drawX + 6 + 32 + 6, drawY + 2);
+        _secondLine->SetPosition(drawX + 6 + 32 + 6, drawY + 14);
+        _thirdLine->SetPosition(drawX + 6 + 32 + 6, drawY + 26);
     }
 
     if (_lines >= 1)
@@ -119,7 +129,7 @@ void MaterialBannerListItemView::Draw(GraphicsContext& graphicsContext)
 
     if (_icon)
     {
-        _icon->SetPosition(6 + _position.x, 6 + _position.y);
+        _icon->SetPosition(6 + drawX, 6 + drawY);
         _icon->Draw(graphicsContext, frontColor);
     }
 }

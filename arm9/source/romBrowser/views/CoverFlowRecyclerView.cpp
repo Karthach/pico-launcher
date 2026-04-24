@@ -228,7 +228,7 @@ void CoverFlowRecyclerView::SetSelectedItem(int itemIdx, bool initial)
     }
     else
     {
-        _scrollAnimator.Goto(itemIdx, md::sys::motion::duration::medium4, &md::sys::motion::easing::standard);
+        _scrollAnimator.Goto(itemIdx, md::sys::motion::duration::medium4, &md::sys::motion::easing::emphasized);
     }
 }
 
@@ -239,9 +239,9 @@ void CoverFlowRecyclerView::UpdateItemPosition(int viewPoolIndex)
     int itemIndex = item.itemIdx;
     fix32<12> absOffsetFromCenter = (itemIndex - _scrollAnimator.GetValue()).Abs();
     fix32<12> initialOffsetFromCenter = absOffsetFromCenter.Clamp(0, 1);
-    fix32<12> x = (COVER_HEIGHT / 4) * initialOffsetFromCenter + COVER_SPACING * absOffsetFromCenter;
-    int angle = -(fix32<16>((absOffsetFromCenter * 10 + 45 * initialOffsetFromCenter).Clamp(-90, 90)) / 360).GetRawValue();
-    fix32<12> z = -absOffsetFromCenter * 30 - 20 * initialOffsetFromCenter;
+    fix32<12> x = (COVER_HEIGHT / 3) * initialOffsetFromCenter + (COVER_SPACING + 2) * absOffsetFromCenter;
+    int angle = -(fix32<16>((absOffsetFromCenter * 12 + 60 * initialOffsetFromCenter).Clamp(-85, 85)) / 360).GetRawValue();
+    fix32<12> z = -absOffsetFromCenter * 40 - 25 * initialOffsetFromCenter;
     if (itemIndex <= _scrollAnimator.GetValue().Int())
     {
         x = -x;

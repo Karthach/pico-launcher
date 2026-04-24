@@ -5,6 +5,7 @@
 #include "gui/views/LabelView.h"
 #include "../FileType/FileIcon.h"
 #include "../DisplayMode/RomBrowserDisplayMode.h"
+#include "animation/Animator.h"
 
 class RomBrowserViewModel;
 class IRomBrowserViewFactory;
@@ -34,6 +35,7 @@ private:
     bool _coverGraphicsUploaded = false;
     bool _showCover;
     Point _coverPosition;
+    Animator<int> _transitionAnimator;
 
     RomBrowserTopScreenView(SharedPtr<RomBrowserViewModel> viewModel,
         const RomBrowserDisplayMode* displayMode,

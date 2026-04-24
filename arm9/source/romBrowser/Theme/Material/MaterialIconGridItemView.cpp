@@ -20,9 +20,19 @@ void MaterialIconGridItemView::Draw(GraphicsContext& graphicsContext)
         return;
 
     auto backColor = _materialColorScheme->inverseOnSurface;
-    auto frontColor = (_isFocused || _inputHandler.IsPenDown())
+    bool isPressed = _inputHandler.IsPenDown();
+    auto frontColor = (_isFocused || isPressed)
         ? _materialColorScheme->mainIconBg
         : _materialColorScheme->surfaceBright;
+
+    int drawX = _position.x;
+    int drawY = _position.y;
+    if (isPressed)
+    {
+        drawX += 1;
+        drawY += 1;
+    }
+
     u16 selectedIconCellPltt[16];
     for (int i = 0; i < 16; i++)
     {
@@ -35,19 +45,19 @@ void MaterialIconGridItemView::Draw(GraphicsContext& graphicsContext)
         selectedIconCellPltt[i] = ColorConverter::ToGBGR565(palColor);
     }
     u32 cellPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
-        DirectPalette(selectedIconCellPltt), _position.y - 2, _position.y - 2 + 48);
+        DirectPalette(selectedIconCellPltt), drawY - 2, drawY - 2 + 48);
 
     gfx_oam_entry_t* oam = graphicsContext.GetOamManager().AllocOams(1);
     OamBuilder::OamWithSize<64, 64>(
-            _position.x - 2,
-            _position.y - 2, _bgVramOffset >> 7)
+            drawX - 2,
+            drawY - 2, _bgVramOffset >> 7)
         .WithPalette16(cellPaletteRow)
         .WithPriority(graphicsContext.GetPriority())
         .Build(oam[0]);
 
     if (_icon)
     {
-        _icon->SetPosition(6 + _position.x, 6 + _position.y);
+        _icon->SetPosition(6 + drawX, 6 + drawY);
         _icon->Draw(graphicsContext, frontColor);
     }
 }
