@@ -13,16 +13,37 @@ on:
 jobs:
   pico_launcher:
     runs-on: ubuntu-latest
-    container: skylyrac/blocksds:slim-v1.16.0
+    container: skylyrac/blocksds:dev-latest
     name: Build Pico Launcher
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
+      - name: Patch libtwl for BlocksDS
+        run: |
+          # Patch libtwl to bypass DEVKITARM check and use BlocksDS toolchain
+          sed -i 's/include $(DEVKITARM)\/ds_rules/# include $(DEVKITARM)\/ds_rules/' libs/libtwl/Makefile
+          sed -i 's/ifeq ($(strip $(DEVKITARM)),)/# ifeq ($(strip $(DEVKITARM)),)/' libs/libtwl/Makefile
+          sed -i 's/$(error "Please set DEVKITARM/# $(error "Please set DEVKITARM/' libs/libtwl/Makefile
+          sed -i 's/endif/# endif/' libs/libtwl/Makefile
+          
+          # Patch libtwl9 and libtwl7 Makefiles to use absolute toolchain paths
+          PREFIX="/opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-"
+          for mf in libs/libtwl/libtwl9/Makefile libs/libtwl/libtwl7/Makefile; do
+            sed -i "s|include \$(DEVKITARM)/ds_rules|PREFIX := $PREFIX\nCC := \$(PREFIX)gcc\nCXX := \$(PREFIX)g++\nAR := \$(PREFIX)gcc-ar\nAS := \$(PREFIX)as -x assembler-with-cpp -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include|" $mf
+            sed -i 's/ifeq ($(strip $(DEVKITARM)),)/#/' $mf
+            sed -i 's/$(error "Please set DEVKITARM/#/' $mf
+            sed -i 's/endif/#/' $mf
+            # Add rules for compiling without ds_rules
+            echo '%.o: %.c; @echo "  CC $<"; $(CC) $(CFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
+            echo '%.o: %.cpp; @echo "  CXX $<"; $(CXX) $(CXXFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
+            echo '%.o: %.s; @echo "  AS $<"; $(CC) $(ASFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
+            echo '$(OUTPUT): $(OFILES); @echo "  AR $@"; $(AR) rcs $@ $(OFILES)' >> $mf
+          done
       - name: Run build script
         run: |
-          make
+          make -j$(nproc)
       - name: Publish build to GH Actions
         uses: actions/upload-artifact@v4
         with:
