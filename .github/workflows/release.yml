@@ -17,34 +17,47 @@ jobs:
       - name: Install zip
         run:
           apt-get update && apt-get -y install zip
-      - name: Patch libtwl for BlocksDS
+      - name: Setup Compatibility Layer for libtwl
         run: |
-          # Patch main libtwl Makefile
-          sed -i 's/^include $(DEVKITARM)\/ds_rules/# include $(DEVKITARM)\/ds_rules/' libs/libtwl/Makefile
-          sed -i 's/^ifeq ($(strip $(DEVKITARM)),)/# ifeq ($(strip $(DEVKITARM)),)/' libs/libtwl/Makefile
-          sed -i 's/^$(error "Please set DEVKITARM/# $(error "Please set DEVKITARM/' libs/libtwl/Makefile
-          sed -i '0,/^endif/s//\# endif/' libs/libtwl/Makefile
+          # Create a fake devkitARM directory structure with the rules libtwl expects
+          mkdir -p /tmp/fake-devkitarm
+          cat <<EOF > /tmp/fake-devkitarm/ds_rules
+          PREFIX  := /opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-
+          CC      := \$(PREFIX)gcc
+          CXX     := \$(PREFIX)g++
+          AR      := \$(PREFIX)gcc-ar
+          AS      := \$(PREFIX)gcc
+          OBJCOPY := \$(PREFIX)objcopy
           
-          # Patch libtwl9 and libtwl7 Makefiles
-          PREFIX="/opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-"
-          for mf in libs/libtwl/libtwl9/Makefile libs/libtwl/libtwl7/Makefile; do
-            # Replace the DEVKITARM block and toolchain include
-            sed -i "s|^include \$(DEVKITARM)/ds_rules|PREFIX := $PREFIX\nCC := \$(PREFIX)gcc\nCXX := \$(PREFIX)g++\nAR := \$(PREFIX)gcc-ar\nAS := \$(PREFIX)as -x assembler-with-cpp -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include|" $mf
-            sed -i 's/^ifeq ($(strip $(DEVKITARM)),)/#/' $mf
-            sed -i 's/^$(error "Please set DEVKITARM/#/' $mf
-            # Only replace the FIRST endif (the one closing the DEVKITARM check)
-            sed -i '0,/^endif/s//\# endif/' $mf
-            
-            # Add explicit rules at the end
-            echo "" >> $mf
-            echo '%.o: %.c; @echo "  CC $<"; $(CC) $(CFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
-            echo '%.o: %.cpp; @echo "  CXX $<"; $(CXX) $(CXXFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
-            echo '%.o: %.s; @echo "  AS $<"; $(CC) $(ASFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
-            echo '$(OUTPUT): $(OFILES); @echo "  AR $@"; $(AR) rcs $@ $(OFILES)' >> $mf
-          done
+          # Add BlocksDS libnds headers to every compilation
+          CFLAGS   += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
+          CXXFLAGS += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
+          ASFLAGS  += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
+          
+          # Explicit rules for libtwl objects
+          %.o: %.c
+          	@echo "  CC $<"
+          	@\$(CC) \$(CFLAGS) -MMD -MP -c -o \$@ \$<
+          
+          %.o: %.cpp
+          	@echo "  CXX $<"
+          	@\$(CXX) \$(CXXFLAGS) -MMD -MP -c -o \$@ \$<
+          
+          %.o: %.s
+          	@echo "  AS $<"
+          	@\$(CC) -x assembler-with-cpp \$(ASFLAGS) -MMD -MP -c -o \$@ \$<
+          
+          \$(OUTPUT): \$(OFILES)
+          	@echo "  AR \$@"
+          	@\$(AR) rcs \$@ \$(OFILES)
+          EOF
+          
+          # Inject variables into the environment for subsequent steps
+          echo "DEVKITARM=/tmp/fake-devkitarm" >> \$GITHUB_ENV
+          echo "LIBNDS=/opt/wonderful/thirdparty/blocksds/core/libs/libnds" >> \$GITHUB_ENV
       - name: Run build script
         run: |
-          make -j$(nproc)
+          make -j\$(nproc)
       - name: Publish build to GH Actions
         uses: actions/upload-artifact@v4
         with:
