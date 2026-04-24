@@ -28,33 +28,30 @@ jobs:
           AR      := $(PREFIX)gcc-ar
           AS      := $(PREFIX)gcc
           OBJCOPY := $(PREFIX)objcopy
-          
-          # Add BlocksDS libnds headers to every compilation
-          CFLAGS   += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
-          CXXFLAGS += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
-          ASFLAGS  += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
-          
-          # Explicit rules for libtwl objects
+
+          # Explicit rules for libtwl objects to ensure they use the correct tools
           %.o: %.c
           	@echo "  CC $<"
           	@$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
-          
+
           %.o: %.cpp
           	@echo "  CXX $<"
           	@$(CXX) $(CXXFLAGS) -MMD -MP -c -o $@ $<
-          
+
           %.o: %.s
           	@echo "  AS $<"
           	@$(CC) -x assembler-with-cpp $(ASFLAGS) -MMD -MP -c -o $@ $<
-          
+
           $(OUTPUT): $(OFILES)
           	@echo "  AR $@"
           	@$(AR) rcs $@ $(OFILES)
           EOF
-          
+
           # Inject variables into the environment for subsequent steps
-          echo "DEVKITARM=/tmp/fake-devkitarm" >> \$GITHUB_ENV
-          echo "LIBNDS=/opt/wonderful/thirdparty/blocksds/core/libs/libnds" >> \$GITHUB_ENV
+          echo "DEVKITARM=/tmp/fake-devkitarm" >> $GITHUB_ENV
+          echo "CPATH=/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include" >> $GITHUB_ENV
+          echo "CPLUS_INCLUDE_PATH=/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include" >> $GITHUB_ENV
+          echo "ASFLAGS=-I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include" >> $GITHUB_ENV
       - name: Run build script
         run: |
           make -j$(nproc 2>/dev/null || echo 2) DEVKITARM=/tmp/fake-devkitarm
