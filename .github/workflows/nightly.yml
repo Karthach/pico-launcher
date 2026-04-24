@@ -24,13 +24,13 @@ jobs:
         run: |
           # Create a fake devkitARM directory structure with the rules libtwl expects
           mkdir -p /tmp/fake-devkitarm
-          cat <<EOF > /tmp/fake-devkitarm/ds_rules
+          cat <<'EOF' > /tmp/fake-devkitarm/ds_rules
           PREFIX  := /opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-
-          CC      := \$(PREFIX)gcc
-          CXX     := \$(PREFIX)g++
-          AR      := \$(PREFIX)gcc-ar
-          AS      := \$(PREFIX)gcc
-          OBJCOPY := \$(PREFIX)objcopy
+          CC      := $(PREFIX)gcc
+          CXX     := $(PREFIX)g++
+          AR      := $(PREFIX)gcc-ar
+          AS      := $(PREFIX)gcc
+          OBJCOPY := $(PREFIX)objcopy
           
           # Add BlocksDS libnds headers to every compilation
           CFLAGS   += -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include
@@ -40,19 +40,19 @@ jobs:
           # Explicit rules for libtwl objects
           %.o: %.c
           	@echo "  CC $<"
-          	@\$(CC) \$(CFLAGS) -MMD -MP -c -o \$@ \$<
+          	@$(CC) $(CFLAGS) -MMD -MP -c -o $@ $<
           
           %.o: %.cpp
           	@echo "  CXX $<"
-          	@\$(CXX) \$(CXXFLAGS) -MMD -MP -c -o \$@ \$<
+          	@$(CXX) $(CXXFLAGS) -MMD -MP -c -o $@ $<
           
           %.o: %.s
           	@echo "  AS $<"
-          	@\$(CC) -x assembler-with-cpp \$(ASFLAGS) -MMD -MP -c -o \$@ \$<
+          	@$(CC) -x assembler-with-cpp $(ASFLAGS) -MMD -MP -c -o $@ $<
           
-          \$(OUTPUT): \$(OFILES)
-          	@echo "  AR \$@"
-          	@\$(AR) rcs \$@ \$(OFILES)
+          $(OUTPUT): $(OFILES)
+          	@echo "  AR $@"
+          	@$(AR) rcs $@ $(OFILES)
           EOF
           
           # Inject variables into the environment for subsequent steps
@@ -60,7 +60,7 @@ jobs:
           echo "LIBNDS=/opt/wonderful/thirdparty/blocksds/core/libs/libnds" >> \$GITHUB_ENV
       - name: Run build script
         run: |
-          make -j$(nproc 2>/dev/null || echo 2)
+          make -j$(nproc 2>/dev/null || echo 2) DEVKITARM=/tmp/fake-devkitarm
       - name: Publish build to GH Actions
         uses: actions/upload-artifact@v4
         with:
