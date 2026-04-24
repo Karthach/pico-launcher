@@ -19,20 +19,24 @@ jobs:
           apt-get update && apt-get -y install zip
       - name: Patch libtwl for BlocksDS
         run: |
-          # Patch libtwl to bypass DEVKITARM check and use BlocksDS toolchain
-          sed -i 's/include $(DEVKITARM)\/ds_rules/# include $(DEVKITARM)\/ds_rules/' libs/libtwl/Makefile
-          sed -i 's/ifeq ($(strip $(DEVKITARM)),)/# ifeq ($(strip $(DEVKITARM)),)/' libs/libtwl/Makefile
-          sed -i 's/$(error "Please set DEVKITARM/# $(error "Please set DEVKITARM/' libs/libtwl/Makefile
-          sed -i 's/endif/# endif/' libs/libtwl/Makefile
+          # Patch main libtwl Makefile
+          sed -i 's/^include $(DEVKITARM)\/ds_rules/# include $(DEVKITARM)\/ds_rules/' libs/libtwl/Makefile
+          sed -i 's/^ifeq ($(strip $(DEVKITARM)),)/# ifeq ($(strip $(DEVKITARM)),)/' libs/libtwl/Makefile
+          sed -i 's/^$(error "Please set DEVKITARM/# $(error "Please set DEVKITARM/' libs/libtwl/Makefile
+          sed -i '0,/^endif/s//\# endif/' libs/libtwl/Makefile
           
-          # Patch libtwl9 and libtwl7 Makefiles to use absolute toolchain paths
+          # Patch libtwl9 and libtwl7 Makefiles
           PREFIX="/opt/wonderful/toolchain/gcc-arm-none-eabi/bin/arm-none-eabi-"
           for mf in libs/libtwl/libtwl9/Makefile libs/libtwl/libtwl7/Makefile; do
-            sed -i "s|include \$(DEVKITARM)/ds_rules|PREFIX := $PREFIX\nCC := \$(PREFIX)gcc\nCXX := \$(PREFIX)g++\nAR := \$(PREFIX)gcc-ar\nAS := \$(PREFIX)as -x assembler-with-cpp -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include|" $mf
-            sed -i 's/ifeq ($(strip $(DEVKITARM)),)/#/' $mf
-            sed -i 's/$(error "Please set DEVKITARM/#/' $mf
-            sed -i 's/endif/#/' $mf
-            # Add rules for compiling without ds_rules
+            # Replace the DEVKITARM block and toolchain include
+            sed -i "s|^include \$(DEVKITARM)/ds_rules|PREFIX := $PREFIX\nCC := \$(PREFIX)gcc\nCXX := \$(PREFIX)g++\nAR := \$(PREFIX)gcc-ar\nAS := \$(PREFIX)as -x assembler-with-cpp -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include|" $mf
+            sed -i 's/^ifeq ($(strip $(DEVKITARM)),)/#/' $mf
+            sed -i 's/^$(error "Please set DEVKITARM/#/' $mf
+            # Only replace the FIRST endif (the one closing the DEVKITARM check)
+            sed -i '0,/^endif/s//\# endif/' $mf
+            
+            # Add explicit rules at the end
+            echo "" >> $mf
             echo '%.o: %.c; @echo "  CC $<"; $(CC) $(CFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
             echo '%.o: %.cpp; @echo "  CXX $<"; $(CXX) $(CXXFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
             echo '%.o: %.s; @echo "  AS $<"; $(CC) $(ASFLAGS) -I/opt/wonderful/thirdparty/blocksds/core/libs/libnds/include -MMD -MP -c -o $@ $<' >> $mf
