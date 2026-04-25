@@ -80,7 +80,7 @@ bool LanguageSettingsBottomSheetView::HandleInput(const InputProvider& inputProv
     {
         for (int i = 0; i < 2; i++)
         {
-            if (focusManager.GetFocus() == _languageChips[i])
+            if (focusManager.GetCurrentFocus() == _languageChips[i])
             {
                 const char* languages[] = { "english", "spanish" };
                 _viewModel->SetLanguage(languages[i]);
@@ -106,11 +106,13 @@ void LanguageSettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, F
     BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
     for (int i = 0; i < 2; i++)
     {
-        if (_languageChips[i]->HandlePenUp(lastTouchPoint, focusManager))
+        _languageChips[i]->HandlePenUp(lastTouchPoint, focusManager);
+        if (_languageChips[i]->GetBounds().Contains(lastTouchPoint))
         {
             const char* languages[] = { "english", "spanish" };
             _viewModel->SetLanguage(languages[i]);
             _viewModel->Close();
+            break;
         }
     }
 }
