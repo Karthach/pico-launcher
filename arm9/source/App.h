@@ -27,6 +27,8 @@
 #include "romBrowser/views/ThemeSettingsBottomSheetView.h"
 #include "romBrowser/views/IconButton2DView.h"
 #include "romBrowser/views/ChipView.h"
+#include "romBrowser/viewModels/LanguageSettingsViewModel.h"
+#include "romBrowser/views/LanguageSettingsBottomSheetView.h"
 #include "romBrowser/Theme/Material/MaterialThemeFileIconFactory.h"
 #include "romBrowser/RomBrowserController.h"
 #include "DialogPresenter.h"
@@ -93,6 +95,7 @@ private:
 
     DisplaySettingsViewModel _displaySettingsBottomSheetViewModel;
     ThemeSettingsViewModel _themeSettingsBottomSheetViewModel;
+    LanguageSettingsViewModel _languageSettingsBottomSheetViewModel;
 
     FocusManager _focusManager;
 
@@ -129,6 +132,8 @@ private:
     void HandleHideDisplaySettingsTrigger();
     void HandleShowThemeSettingsTrigger();
     void HandleHideThemeSettingsTrigger();
+    void HandleShowLanguageSettingsTrigger();
+    void HandleHideLanguageSettingsTrigger();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
     void HandleChangeDisplayModeTrigger(RomBrowserState newState);
