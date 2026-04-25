@@ -26,13 +26,13 @@
 #define TITLE_LABEL_Y       16
 
 #define LAYOUT_LABEL_X      20
-#define LAYOUT_LABEL_Y      46
+#define LAYOUT_LABEL_Y      42
 
 #define SORTING_LABEL_X     20
-#define SORTING_LABEL_Y     78
+#define SORTING_LABEL_Y     74
 
 #define LANGUAGE_LABEL_X     20
-#define LANGUAGE_LABEL_Y     112
+#define LANGUAGE_LABEL_Y     106
 
 static RomBrowserLayout sRomBrowserDisplayModes[4] =
 {
@@ -200,7 +200,7 @@ void DisplaySettingsBottomSheetView::Update()
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(x, _position.y + 38);
+        layoutOption->SetPosition(x, _position.y + (LAYOUT_LABEL_Y - 8));
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -212,7 +212,7 @@ void DisplaySettingsBottomSheetView::Update()
     idx = 0;
     for (auto& sortOption : _sortOptions)
     {
-        sortOption->SetPosition(x, _position.y + 70);
+        sortOption->SetPosition(x, _position.y + (SORTING_LABEL_Y - 8));
         sortOption->SetState(sRomBrowserSortModes[idx] == selectedSortMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -225,7 +225,7 @@ void DisplaySettingsBottomSheetView::Update()
     const char* languages[] = { "english", "spanish" };
     for (auto& langOption : _languageOptions)
     {
-        langOption->SetPosition(x, _position.y + 102);
+        langOption->SetPosition(x, _position.y + (LANGUAGE_LABEL_Y - 10));
         langOption->SetSelected(strcmp(languages[idx], currentLang) == 0);
         x += langOption->GetWidth() + 8;
         idx++;
