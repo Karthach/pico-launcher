@@ -15,8 +15,7 @@
 LanguageSettingsBottomSheetView::LanguageSettingsBottomSheetView(
     LanguageSettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
     const IFontRepository* fontRepository, ILocalizationService& localizationService)
-    : BottomSheetView()
-    , _viewModel(viewModel)
+    : _viewModel(viewModel)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _materialColorScheme(materialColorScheme)
 {
