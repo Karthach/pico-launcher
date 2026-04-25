@@ -196,7 +196,7 @@ void DisplaySettingsBottomSheetView::Update()
     BottomSheetView::Update();
     UpdateLabels();
     auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
-    int x = 70;
+    int x = 120;
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
@@ -208,7 +208,7 @@ void DisplaySettingsBottomSheetView::Update()
         idx++;
     }
     auto selectedSortMode = _viewModel->GetRomBrowserSortMode();
-    x = 70;
+    x = 120;
     idx = 0;
     for (auto& sortOption : _sortOptions)
     {
@@ -220,7 +220,7 @@ void DisplaySettingsBottomSheetView::Update()
         idx++;
     }
     auto currentLang = _viewModel->GetLanguage();
-    x = 70;
+    x = 120;
     idx = 0;
     const char* languages[] = { "english", "spanish" };
     for (auto& langOption : _languageOptions)
