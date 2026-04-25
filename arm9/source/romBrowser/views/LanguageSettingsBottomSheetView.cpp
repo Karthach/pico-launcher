@@ -22,14 +22,12 @@ LanguageSettingsBottomSheetView::LanguageSettingsBottomSheetView(
     _titleLabel->SetText(localizationService.GetString("language_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
 
-    const char* languages[] = { "english", "spanish" };
     const char16_t* languageNames[] = { u"English", u"Español" };
 
     for (int i = 0; i < 2; i++)
     {
         _languageChips[i] = ChipView::CreateShared(md::sys::color::surfaceContainerLow, materialColorScheme, fontRepository);
         _languageChips[i]->SetText(languageNames[i]);
-        _languageChips[i]->SetSelected(strcmp(_viewModel->GetCurrentLanguage(), languages[i]) == 0);
         AddChildTail(_languageChips[i].GetPointer());
     }
 }
@@ -45,24 +43,30 @@ void LanguageSettingsBottomSheetView::InitVram(const VramContext& vramContext)
 
 void LanguageSettingsBottomSheetView::Update()
 {
+    BottomSheetView::Update();
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
+
+    const char* languages[] = { "english", "spanish" };
+    const char* currentLang = _viewModel->GetCurrentLanguage();
+
     for (int i = 0; i < 2; i++)
     {
-        _languageChips[i]->SetPosition(20 + (i % 2) * 110, _position.y + 60 + (i / 2) * 40);
+        _languageChips[i]->SetPosition(20 + (i % 2) * 110, _position.y + 46 + (i / 2) * 30);
+        _languageChips[i]->SetSelected(strcmp(languages[i], currentLang) == 0);
     }
-    BottomSheetView::Update();
 }
 
 void LanguageSettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 {
-    BottomSheetView::Draw(graphicsContext);
-    _titleLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
-    _titleLabel->SetForegroundColor(_materialColorScheme->onSurface);
-    _titleLabel->Draw(graphicsContext);
-    for (int i = 0; i < 2; i++)
+    graphicsContext.SetClipArea(GetBounds());
+    u32 oldPrio = graphicsContext.SetPriority(1);
     {
-        _languageChips[i]->Draw(graphicsContext);
+        _titleLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _titleLabel->SetForegroundColor(_materialColorScheme->onSurface);
+        BottomSheetView::Draw(graphicsContext);
     }
+    graphicsContext.SetPriority(oldPrio);
+    graphicsContext.ResetClipArea();
 }
 
 void LanguageSettingsBottomSheetView::VBlank()
@@ -78,43 +82,37 @@ bool LanguageSettingsBottomSheetView::HandleInput(const InputProvider& inputProv
 {
     if (inputProvider.Triggered(InputKey::B))
     {
-        Close();
+        _viewModel->Close();
         return true;
     }
+
     if (inputProvider.Triggered(InputKey::A))
     {
+        auto currentFocus = focusManager.GetCurrentFocus();
+        const char* languages[] = { "english", "spanish" };
         for (int i = 0; i < 2; i++)
         {
-            if (focusManager.GetCurrentFocus() == _languageChips[i])
+            if (currentFocus.GetPointer() == _languageChips[i].GetPointer())
             {
-                const char* languages[] = { "english", "spanish" };
                 _viewModel->SetLanguage(languages[i]);
                 _viewModel->Close();
                 return true;
             }
         }
     }
-    return BottomSheetView::HandleInput(inputProvider, focusManager);
+
+    return false;
 }
 
 void LanguageSettingsBottomSheetView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenDown(touchPoint, focusManager);
+    const char* languages[] = { "english", "spanish" };
     for (int i = 0; i < 2; i++)
     {
-        _languageChips[i]->HandlePenDown(touchPoint, focusManager);
-    }
-}
-
-void LanguageSettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
-{
-    BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
-    for (int i = 0; i < 2; i++)
-    {
-        _languageChips[i]->HandlePenUp(lastTouchPoint, focusManager);
-        if (_languageChips[i]->GetBounds().Contains(lastTouchPoint))
+        if (_languageChips[i]->GetBounds().Contains(touchPoint))
         {
-            const char* languages[] = { "english", "spanish" };
+            focusManager.Focus(_languageChips[i]);
             _viewModel->SetLanguage(languages[i]);
             _viewModel->Close();
             break;
@@ -122,17 +120,18 @@ void LanguageSettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, F
     }
 }
 
+void LanguageSettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
+{
+    BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
+}
+
 void LanguageSettingsBottomSheetView::Focus(FocusManager& focusManager)
 {
-    for (int i = 0; i < 2; i++)
-    {
-        if (strcmp(_viewModel->GetCurrentLanguage(), (i == 0 ? "english" : "spanish")) == 0)
-        {
-            focusManager.Focus(_languageChips[i]);
-            return;
-        }
-    }
-    focusManager.Focus(_languageChips[0]);
+    const char* currentLang = _viewModel->GetCurrentLanguage();
+    if (strcmp(currentLang, "spanish") == 0)
+        focusManager.Focus(_languageChips[1]);
+    else
+        focusManager.Focus(_languageChips[0]);
 }
 
 void LanguageSettingsBottomSheetView::Close()
@@ -142,16 +141,21 @@ void LanguageSettingsBottomSheetView::Close()
 
 SharedPtr<View> LanguageSettingsBottomSheetView::MoveFocus(const SharedPtr<View>& currentFocus, FocusMoveDirection direction, View* source)
 {
+    int currentIdx = -1;
     for (int i = 0; i < 2; i++)
     {
-        if (currentFocus == _languageChips[i])
+        if (currentFocus.GetPointer() == _languageChips[i].GetPointer())
         {
-            if (direction == FocusMoveDirection::Right && i % 2 == 0 && i + 1 < 2) return _languageChips[i + 1];
-            if (direction == FocusMoveDirection::Left && i % 2 == 1) return _languageChips[i - 1];
-            if (direction == FocusMoveDirection::Down && i + 2 < 2) return _languageChips[i + 2];
-            if (direction == FocusMoveDirection::Up && i - 2 >= 0) return _languageChips[i - 2];
+            currentIdx = i;
+            break;
         }
     }
+
+    if (currentIdx == -1) return nullptr;
+
+    if (direction == FocusMoveDirection::Right && currentIdx == 0) return _languageChips[1];
+    if (direction == FocusMoveDirection::Left && currentIdx == 1) return _languageChips[0];
+
     return nullptr;
 }
 

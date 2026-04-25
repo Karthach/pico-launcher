@@ -12,7 +12,7 @@
 #include "bannerListIcon.h"
 #include "coverflowIcon.h"
 #include "listIcon.h"
-#include "unknownIcon.h"
+#include "moviesIcon.h"
 #include "gui/IVramManager.h"
 #include "../DisplayMode/RomBrowserDisplayMode.h"
 #include "RomBrowserAppBarView.h"
@@ -54,8 +54,8 @@ void RomBrowserAppBarView::InitVram(const VramContext& vramContext)
         dma_ntrCopy32(3, backIconTiles, objVramManager->GetVramAddress(backIconVramOffset), backIconTilesLen);
         _appBarView->SetButtonIcon(APP_BAR_BUTTON_BACK, backIconVramOffset);
 
-        u32 langIconVramOffset = objVramManager->Alloc(unknownIconTilesLen);
-        dma_ntrCopy32(3, unknownIconTiles, objVramManager->GetVramAddress(langIconVramOffset), unknownIconTilesLen);
+        u32 langIconVramOffset = objVramManager->Alloc(moviesIconTilesLen);
+        dma_ntrCopy32(3, moviesIconTiles, objVramManager->GetVramAddress(langIconVramOffset), moviesIconTilesLen);
         _appBarView->SetButtonIcon(APP_BAR_BUTTON_LANGUAGE_SETTINGS, langIconVramOffset);
 
         u32 themeIconVramOffset = objVramManager->Alloc(picturesIconTilesLen);
