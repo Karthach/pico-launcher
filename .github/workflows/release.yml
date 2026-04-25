@@ -7,6 +7,8 @@ on:
 jobs:
   pico_launcher:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     container: skylyrac/blocksds:slim-v1.16.0
     name: Build Pico Launcher
     steps:
