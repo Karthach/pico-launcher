@@ -79,25 +79,6 @@ void RomBrowserController::HideThemeSettings()
     _stateMachine.Fire(RomBrowserStateTrigger::HideThemeSettings);
 }
 
-void RomBrowserController::ShowLanguageSettings()
-{
-    _stateMachine.Fire(RomBrowserStateTrigger::ShowLanguageSettings);
-}
-
-void RomBrowserController::HideLanguageSettings()
-{
-    if (_saveSettingsPending)
-    {
-        _saveSettingsPending = false;
-        _ioTaskQueue->Enqueue([this] (const vu8& cancelRequested)
-        {
-            _appSettingsService->Save();
-            return TaskResult<void>::Completed();
-        });
-    }
-    _stateMachine.Fire(RomBrowserStateTrigger::HideLanguageSettings);
-}
-
 void RomBrowserController::SetRomBrowserDisplaySettings(
     const RomBrowserDisplaySettings& romBrowserDisplaySettings)
 {

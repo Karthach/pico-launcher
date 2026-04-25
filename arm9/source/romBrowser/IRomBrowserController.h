@@ -24,8 +24,6 @@ public:
     virtual void HideDisplaySettings() = 0;
     virtual void ShowThemeSettings() = 0;
     virtual void HideThemeSettings() = 0;
-    virtual void ShowLanguageSettings() = 0;
-    virtual void HideLanguageSettings() = 0;
 
     virtual void Update() = 0;
 

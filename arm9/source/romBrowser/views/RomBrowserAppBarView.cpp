@@ -22,16 +22,12 @@ RomBrowserAppBarView::RomBrowserAppBarView(
     const IRomBrowserViewFactory* romBrowserViewFactory)
     : _viewModel(viewModel)
 {
-    _appBarView = displayMode.CreateAppBarView(romBrowserViewFactory, 1, 3);
+    _appBarView = displayMode.CreateAppBarView(romBrowserViewFactory, 1, 2);
     AddChildTail(_appBarView.GetPointer());
 
     _appBarView->SetButtonAction(APP_BAR_BUTTON_BACK, [] (IconButtonView* sender, void* arg)
     {
         ((RomBrowserAppBarViewModel*)arg)->NavigateUp();
-    }, _viewModel);
-    _appBarView->SetButtonAction(APP_BAR_BUTTON_LANGUAGE_SETTINGS, [] (IconButtonView* sender, void* arg)
-    {
-        ((RomBrowserAppBarViewModel*)arg)->ShowLanguageSettings();
     }, _viewModel);
     _appBarView->SetButtonAction(APP_BAR_BUTTON_THEME_SETTINGS, [] (IconButtonView* sender, void* arg)
     {
@@ -53,10 +49,6 @@ void RomBrowserAppBarView::InitVram(const VramContext& vramContext)
         u32 backIconVramOffset = objVramManager->Alloc(backIconTilesLen);
         dma_ntrCopy32(3, backIconTiles, objVramManager->GetVramAddress(backIconVramOffset), backIconTilesLen);
         _appBarView->SetButtonIcon(APP_BAR_BUTTON_BACK, backIconVramOffset);
-
-        u32 langIconVramOffset = objVramManager->Alloc(moviesIconTilesLen);
-        dma_ntrCopy32(3, moviesIconTiles, objVramManager->GetVramAddress(langIconVramOffset), moviesIconTilesLen);
-        _appBarView->SetButtonIcon(APP_BAR_BUTTON_LANGUAGE_SETTINGS, langIconVramOffset);
 
         u32 themeIconVramOffset = objVramManager->Alloc(picturesIconTilesLen);
         dma_ntrCopy32(3, picturesIconTiles, objVramManager->GetVramAddress(themeIconVramOffset), picturesIconTilesLen);

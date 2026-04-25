@@ -51,9 +51,8 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILoca
         InputKey::DpadLeft | InputKey::DpadRight | InputKey::DpadUp | InputKey::DpadDown | InputKey::L | InputKey::R,
         25, 8)
     , _romBrowserController(&appSettingsService, &_ioTaskQueue, &_bgTaskQueue)
-    , _displaySettingsBottomSheetViewModel(&_romBrowserController)
+    , _displaySettingsBottomSheetViewModel(&_romBrowserController, &appSettingsService)
     , _themeSettingsBottomSheetViewModel(&_romBrowserController, &appSettingsService)
-    , _languageSettingsBottomSheetViewModel(&_romBrowserController, &appSettingsService)
     , _romBrowserBottomScreenViewModel(&_romBrowserController)
     , _dialogPresenter(&_focusManager, &_mainObjDialogVram) { }
 
@@ -293,16 +292,6 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
             HandleHideThemeSettingsTrigger();
             break;
         }
-        case RomBrowserStateTrigger::ShowLanguageSettings:
-        {
-            HandleShowLanguageSettingsTrigger();
-            break;
-        }
-        case RomBrowserStateTrigger::HideLanguageSettings:
-        {
-            HandleHideLanguageSettingsTrigger();
-            break;
-        }
         case RomBrowserStateTrigger::Navigate:
         {
             HandleNavigateTrigger();
@@ -365,21 +354,6 @@ void App::HandleShowThemeSettingsTrigger()
 }
 
 void App::HandleHideThemeSettingsTrigger()
-{
-    _dialogPresenter.CloseDialog();
-    if (!_dialogPresenter.GetOldFocus())
-        _romBrowserBottomScreenView->Focus(_focusManager);
-}
-
-void App::HandleShowLanguageSettingsTrigger()
-{
-    auto languageSettingsDialog = LanguageSettingsBottomSheetView::CreateShared(
-        &_languageSettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
-    languageSettingsDialog->SetGraphics(_chipViewVram);
-    _dialogPresenter.ShowDialog(std::move(languageSettingsDialog));
-}
-
-void App::HandleHideLanguageSettingsTrigger()
 {
     _dialogPresenter.CloseDialog();
     if (!_dialogPresenter.GetOldFocus())

@@ -2,12 +2,15 @@
 #include "../IRomBrowserController.h"
 #include "services/settings/RomBrowserDisplaySettings.h"
 
+#include "services/settings/IAppSettingsService.h"
+
 /// @brief View model for the display settings screen.
 class DisplaySettingsViewModel
 {
 public:
-    explicit DisplaySettingsViewModel(IRomBrowserController* romBrowserController)
+    DisplaySettingsViewModel(IRomBrowserController* romBrowserController, IAppSettingsService* appSettingsService)
         : _romBrowserController(romBrowserController)
+        , _appSettingsService(appSettingsService)
         , _romBrowserDisplaySettings(_romBrowserController->GetRomBrowserDisplaySettings()) { }
 
     constexpr RomBrowserLayout GetRomBrowserDisplayMode() const
@@ -38,6 +41,20 @@ public:
         }
     }
 
+    const char* GetLanguage() const
+    {
+        return _appSettingsService->GetAppSettings().language.GetString();
+    }
+
+    void SetLanguage(const char* language)
+    {
+        if (strcmp(_appSettingsService->GetAppSettings().language.GetString(), language) != 0)
+        {
+            _appSettingsService->GetAppSettings().language = language;
+            _appSettingsService->Save();
+        }
+    }
+
     void Close()
     {
         _romBrowserController->HideDisplaySettings();
@@ -45,5 +62,6 @@ public:
 
 private:
     IRomBrowserController* _romBrowserController;
+    IAppSettingsService* _appSettingsService;
     RomBrowserDisplaySettings _romBrowserDisplaySettings;
 };

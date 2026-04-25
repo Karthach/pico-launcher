@@ -95,7 +95,6 @@ private:
 
     DisplaySettingsViewModel _displaySettingsBottomSheetViewModel;
     ThemeSettingsViewModel _themeSettingsBottomSheetViewModel;
-    LanguageSettingsViewModel _languageSettingsBottomSheetViewModel;
 
     FocusManager _focusManager;
 
@@ -132,8 +131,6 @@ private:
     void HandleHideDisplaySettingsTrigger();
     void HandleShowThemeSettingsTrigger();
     void HandleHideThemeSettingsTrigger();
-    void HandleShowLanguageSettingsTrigger();
-    void HandleHideLanguageSettingsTrigger();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
     void HandleChangeDisplayModeTrigger(RomBrowserState newState);

@@ -31,8 +31,8 @@
 #define SORTING_LABEL_X     20
 #define SORTING_LABEL_Y     78
 
-#define FILTERS_LABEL_X     20
-#define FILTERS_LABEL_Y     112
+#define LANGUAGE_LABEL_X     20
+#define LANGUAGE_LABEL_Y     112
 
 static RomBrowserLayout sRomBrowserDisplayModes[4] =
 {
@@ -56,8 +56,8 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
-    // , _filtersLabel(64, 16, 25, fontRepository->GetFont(FontType::Regular10))
 {
     _titleLabel->SetText(localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
@@ -65,8 +65,8 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     AddChildTail(_layoutLabel.GetPointer());
     _sortingLabel->SetText(localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
-    // _filtersLabel.SetText(u"Filters");
-    // AddChildTail(&_filtersLabel);
+    _languageLabel->SetText(localizationService.GetString("language_settings_title"));
+    AddChildTail(_languageLabel.GetPointer());
 
     for (auto& layoutOption : _layoutOptions)
     {
@@ -80,13 +80,11 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
         AddChildTail(sortOption.GetPointer());
     }
 
-    // for (auto& filterOption : _filterOptions)
-    // {
-    //     filterOption = CreateFilterOptionIconButton();
-    //     AddChildTail(&filterOption);
-    // }
-
-    // _filterOptions[0].SetState(IconButtonView::State::ToggleSelected);
+    for (auto& langOption : _languageOptions)
+    {
+        langOption = CreateLanguageOptionIconButton();
+        AddChildTail(langOption.GetPointer());
+    }
 }
 
 SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLayoutOptionIconButton()
@@ -135,6 +133,30 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateSortOptionIcon
     return sortOption;
 }
 
+SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLanguageOptionIconButton()
+{
+    auto langOption = IconButton2DView::CreateShared(
+        IconButtonView::Type::Tonal,
+        IconButtonView::State::ToggleUnselected,
+        md::sys::color::surfaceContainerLow,
+        _materialColorScheme
+    );
+    langOption->SetAction([] (IconButtonView* sender, void* arg)
+    {
+        auto self = reinterpret_cast<DisplaySettingsBottomSheetView*>(arg);
+        for (u32 i = 0; i < self->_languageOptions.size(); i++)
+        {
+            if (self->_languageOptions[i].GetPointer() == sender)
+            {
+                const char* languages[] = { "english", "spanish" };
+                self->_viewModel->SetLanguage(languages[i]);
+                break;
+            }
+        }
+    }, this);
+    return langOption;
+}
+
 // IconButtonView DisplaySettingsBottomSheetView::CreateFilterOptionIconButton()
 // {
 //     IconButtonView filterOption
@@ -165,6 +187,10 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _sortOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameDescendingIconTiles, sortNameDescendingIconTilesLen));
         // _sortOptions[2].SetIconVramOffset(LoadIcon(objVramManager, recentIconTiles, recentIconTilesLen));
 
+        // language options
+        _languageOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, moviesIconTiles, moviesIconTilesLen));
+        _languageOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, musicIconTiles, musicIconTilesLen));
+
         // filter options
         // _filterOptions[0].SetIconVramOffset(LoadIcon(objVramManager, gamesIconTiles, gamesIconTilesLen));
         // _filterOptions[1].SetIconVramOffset(LoadIcon(objVramManager, picturesIconTiles, picturesIconTilesLen));
@@ -179,6 +205,7 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
     _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
+    _languageLabel->SetPosition(LANGUAGE_LABEL_X, _position.y + LANGUAGE_LABEL_Y);
     // _filtersLabel.SetPosition(FILTERS_LABEL_X, _position.y + FILTERS_LABEL_Y);
 }
 
@@ -210,12 +237,19 @@ void DisplaySettingsBottomSheetView::Update()
         x += 32;
         idx++;
     }
-    // x = 70;
-    // for (auto& filterOption : _filterOptions)
-    // {
-    //     filterOption.SetPosition(x, _position.y + 102);
-    //     x += 32;
-    // }
+    auto currentLang = _viewModel->GetLanguage();
+    x = 70;
+    idx = 0;
+    const char* languages[] = { "english", "spanish" };
+    for (auto& langOption : _languageOptions)
+    {
+        langOption->SetPosition(x, _position.y + 102);
+        langOption->SetState(strcmp(languages[idx], currentLang) == 0
+            ? IconButtonView::State::ToggleSelected
+            : IconButtonView::State::ToggleUnselected);
+        x += 32;
+        idx++;
+    }
 }
 
 void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
@@ -229,6 +263,8 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _layoutLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         _sortingLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _sortingLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _languageLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _languageLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         // _filtersLabel.SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         // _filtersLabel.SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         BottomSheetView::Draw(graphicsContext);
@@ -300,53 +336,47 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
                     idx = 0;
                 return _sortOptions[idx];
             }
-            else //if (direction == FocusMoveDirection::Up)
+            else if (direction == FocusMoveDirection::Up)
             {
                 if (idx >= (int)_layoutOptions.size())
                     idx = _layoutOptions.size() - 1;
                 return _layoutOptions[idx];
             }
-            // else //if (direction == FocusMoveDirection::Down)
-            // {
-            //     if (idx >= (int)_filterOptions.size())
-            //         idx = _filterOptions.size() - 1;
-            //     return &_filterOptions[idx];
-            // }
+            else //if (direction == FocusMoveDirection::Down)
+            {
+                if (idx >= (int)_languageOptions.size())
+                    idx = _languageOptions.size() - 1;
+                return _languageOptions[idx];
+            }
         }
         idx++;
     }
-    // idx = 0;
-    // for (auto& filterOption : _filterOptions)
-    // {
-    //     if (currentFocus == &filterOption)
-    //     {
-    //         if (direction == FocusMoveDirection::Left)
-    //         {
-    //             if (--idx < 0)
-    //                 idx += _filterOptions.size();
-    //             return &_filterOptions[idx];
-    //         }
-    //         else if (direction == FocusMoveDirection::Right)
-    //         {
-    //             if (++idx >= (int)_filterOptions.size())
-    //                 idx = 0;
-    //             return &_filterOptions[idx];
-    //         }
-    //         else if (direction == FocusMoveDirection::Up)
-    //         {
-    //             if (idx >= (int)_sortOptions.size())
-    //                 idx = _sortOptions.size() - 1;
-    //             return &_sortOptions[idx];
-    //         }
-    //         else //if (direction == FocusMoveDirection::Down)
-    //         {
-    //             if (idx >= (int)_layoutOptions.size())
-    //                 idx = _layoutOptions.size() - 1;
-    //             return &_layoutOptions[idx];
-    //         }
-    //     }
-    //     idx++;
-    // }
+    idx = 0;
+    for (auto& langOption : _languageOptions)
+    {
+        if (currentFocus.GetPointer() == langOption.GetPointer())
+        {
+            if (direction == FocusMoveDirection::Left)
+            {
+                if (--idx < 0)
+                    idx += _languageOptions.size();
+                return _languageOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Right)
+            {
+                if (++idx >= (int)_languageOptions.size())
+                    idx = 0;
+                return _languageOptions[idx];
+            }
+            else if (direction == FocusMoveDirection::Up)
+            {
+                if (idx >= (int)_sortOptions.size())
+                    idx = _sortOptions.size() - 1;
+                return _sortOptions[idx];
+            }
+        }
+        idx++;
+    }
     return nullptr;
 }
 
@@ -361,8 +391,10 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     {
         sortOption->SetGraphics(iconButtonVramToken);
     }
-    // for (auto& filterOption : _filterOptions)
-    //     filterOption.SetGraphics(iconButtonVramToken);
+    for (auto& langOption : _languageOptions)
+    {
+        langOption->SetGraphics(iconButtonVramToken);
+    }
 }
 
 void DisplaySettingsBottomSheetView::Close()

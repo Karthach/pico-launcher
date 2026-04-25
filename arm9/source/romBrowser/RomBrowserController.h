@@ -30,8 +30,6 @@ public:
     void HideDisplaySettings() override;
     void ShowThemeSettings() override;
     void HideThemeSettings() override;
-    void ShowLanguageSettings() override;
-    void HideLanguageSettings() override;
 
     void Update() override;
 
