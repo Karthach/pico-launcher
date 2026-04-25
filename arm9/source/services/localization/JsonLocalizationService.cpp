@@ -1,3 +1,4 @@
+#include <string.h>
 #include "common.h"
 #include <memory>
 #include "json/ArduinoJson.h"
@@ -33,6 +34,11 @@ JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSetting
         return;
 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
+    if (!fileData)
+    {
+        LOG_ERROR("Alloc lang buffer fail\n");
+        return;
+    }
     u8* fileDataPtr = fileData.get();
 
     u32 bytesRead = 0;
