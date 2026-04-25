@@ -1,0 +1,54 @@
+name: Build Pico Launcher
+
+on:
+  push:
+    paths-ignore:
+      - 'README.md'
+  pull_request:
+    branches: ["develop"]
+    paths-ignore:
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pico_launcher:
+    runs-on: ubuntu-latest
+    container: skylyrac/blocksds:slim-v1.16.0
+    name: Build Pico Launcher
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Run build script
+        run: |
+          make
+      - name: Publish build to GH Actions
+        uses: actions/upload-artifact@v4
+        with:
+          path: |
+            _pico/
+            LAUNCHER.nds
+          name: Pico_Launcher
+      - name: Create Release Package
+        run: |
+          # Install zip in container if not present
+          apt-get update && apt-get install -y zip
+          mkdir -p latest_build
+          cp LAUNCHER.nds latest_build/
+          cp -r _pico latest_build/
+          zip -r Pico_Launcher_Latest.zip latest_build/*
+      - name: Update Latest Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest Development Build"
+          body: "Esta es una build automática con los últimos cambios de la rama develop.\n\n- Incluye mejoras visuales (animaciones M3).\n- Nuevo menú de selección de temas.\n- Feedback táctil mejorado."
+          prerelease: true
+          make_latest: true
+          files: |
+            LAUNCHER.nds
+            Pico_Launcher_Latest.zip
