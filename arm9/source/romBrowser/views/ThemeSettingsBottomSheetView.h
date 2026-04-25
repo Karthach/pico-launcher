@@ -1,6 +1,8 @@
 #pragma once
+#include "core/SharedPtr.h"
 #include "BottomSheetView.h"
 #include "ChipView.h"
+#include "gui/views/Label2DView.h"
 #include "../viewModels/ThemeSettingsViewModel.h"
 
 class ILocalizationService;

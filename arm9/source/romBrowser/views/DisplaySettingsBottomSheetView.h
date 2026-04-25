@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include "core/SharedPtr.h"
 #include "BottomSheetView.h"
 #include "gui/views/Label2DView.h"
 #include "IconButton2DView.h"

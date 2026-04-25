@@ -1,4 +1,5 @@
 #pragma once
+#include "core/SharedPtr.h"
 #include "BottomSheetView.h"
 #include "ChipView.h"
 #include "gui/FocusManager.h"
@@ -6,6 +7,7 @@
 class IRomBrowserController;
 class IFontRepository;
 class ILocalizationService;
+class Label2DView;
 
 class NdsGameDetailsBottomSheetView : public BottomSheetView
 {
