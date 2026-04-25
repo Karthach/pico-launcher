@@ -2,6 +2,7 @@
 #include <array>
 #include "core/SharedPtr.h"
 #include "BottomSheetView.h"
+#include "ChipView.h"
 #include "gui/views/Label2DView.h"
 #include "IconButton2DView.h"
 #include "../viewModels/DisplaySettingsViewModel.h"
@@ -19,7 +20,9 @@ public:
     void InitVram(const VramContext& vramContext) override;
     void Update() override;
     void Draw(GraphicsContext& graphicsContext) override;
+    void VBlank() override;
     bool HandleInput(const InputProvider& inputProvider, FocusManager& focusManager) override;
+    void HandlePenDown(const Point& touchPoint, FocusManager& focusManager) override;
     SharedPtr<View> MoveFocus(const SharedPtr<View>& currentFocus,
         FocusMoveDirection direction, View* source) override;
 
