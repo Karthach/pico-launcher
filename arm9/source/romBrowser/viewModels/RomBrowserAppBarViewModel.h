@@ -23,11 +23,6 @@ public:
         _romBrowserController->ShowThemeSettings();
     }
 
-    void ShowLanguageSettings()
-    {
-        _romBrowserController->ShowLanguageSettings();
-    }
-
     constexpr RomBrowserLayout GetRomBrowserLayout() const
     {
         return _romBrowserController->GetRomBrowserDisplaySettings().layout;
