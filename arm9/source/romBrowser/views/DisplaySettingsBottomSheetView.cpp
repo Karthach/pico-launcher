@@ -402,7 +402,8 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
 }
 
 void DisplaySettingsBottomSheetView::SetGraphics(
-    const IconButton2DView::VramToken& iconButtonVramToken)
+    const IconButton2DView::VramToken& iconButtonVramToken,
+    const ChipView::VramToken& chipViewVramToken)
 {
     for (auto& layoutOption : _layoutOptions)
     {
@@ -414,7 +415,7 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     }
     for (auto& langOption : _languageOptions)
     {
-        langOption->SetGraphics(iconButtonVramToken);
+        langOption->SetGraphics(chipViewVramToken);
     }
 }
 

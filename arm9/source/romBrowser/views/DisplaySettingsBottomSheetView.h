@@ -26,7 +26,8 @@ public:
     SharedPtr<View> MoveFocus(const SharedPtr<View>& currentFocus,
         FocusMoveDirection direction, View* source) override;
 
-    void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken);
+    void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken,
+        const ChipView::VramToken& chipViewVramToken);
 
     void Focus(FocusManager& focusManager) override
     {

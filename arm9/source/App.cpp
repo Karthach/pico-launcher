@@ -333,7 +333,7 @@ void App::HandleShowDisplaySettingsTrigger()
 {
     auto displaySettingsDialog = DisplaySettingsBottomSheetView::CreateShared(
         &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
-    displaySettingsDialog->SetGraphics(_iconButtonViewVram);
+    displaySettingsDialog->SetGraphics(_iconButtonViewVram, _chipViewVram);
     _dialogPresenter.ShowDialog(std::move(displaySettingsDialog));
 }
 
