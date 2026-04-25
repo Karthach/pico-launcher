@@ -43,13 +43,14 @@ private:
 
     std::array<SharedPtr<IconButton2DView>, 4> _layoutOptions;
     std::array<SharedPtr<IconButton2DView>, 2> _sortOptions;
-    std::array<SharedPtr<IconButton2DView>, 2> _languageOptions;
+    std::array<SharedPtr<ChipView>, 2> _languageOptions;
 
     const MaterialColorScheme* _materialColorScheme;
+    const IFontRepository* _fontRepository;
 
     SharedPtr<IconButton2DView> CreateLayoutOptionIconButton();
     SharedPtr<IconButton2DView> CreateSortOptionIconButton();
-    SharedPtr<IconButton2DView> CreateLanguageOptionIconButton();
+    SharedPtr<ChipView> CreateLanguageOptionChip();
 
     DisplaySettingsBottomSheetView(DisplaySettingsViewModel* viewModel,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,

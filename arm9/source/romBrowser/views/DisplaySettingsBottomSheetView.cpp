@@ -58,6 +58,7 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
+    , _fontRepository(fontRepository)
 {
     _titleLabel->SetText(localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
@@ -80,10 +81,12 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
         AddChildTail(sortOption.GetPointer());
     }
 
-    for (auto& langOption : _languageOptions)
+    const char16_t* languageNames[] = { u"English", u"Español" };
+    for (u32 i = 0; i < _languageOptions.size(); i++)
     {
-        langOption = CreateLanguageOptionIconButton();
-        AddChildTail(langOption.GetPointer());
+        _languageOptions[i] = CreateLanguageOptionChip();
+        _languageOptions[i]->SetText(languageNames[i]);
+        AddChildTail(_languageOptions[i].GetPointer());
     }
 }
 
@@ -133,27 +136,13 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateSortOptionIcon
     return sortOption;
 }
 
-SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLanguageOptionIconButton()
+SharedPtr<ChipView> DisplaySettingsBottomSheetView::CreateLanguageOptionChip()
 {
-    auto langOption = IconButton2DView::CreateShared(
-        IconButtonView::Type::Tonal,
-        IconButtonView::State::ToggleUnselected,
+    auto langOption = ChipView::CreateShared(
         md::sys::color::surfaceContainerLow,
-        _materialColorScheme
+        _materialColorScheme,
+        _fontRepository
     );
-    langOption->SetAction([] (IconButtonView* sender, void* arg)
-    {
-        auto self = reinterpret_cast<DisplaySettingsBottomSheetView*>(arg);
-        for (u32 i = 0; i < self->_languageOptions.size(); i++)
-        {
-            if (self->_languageOptions[i].GetPointer() == sender)
-            {
-                const char* languages[] = { "english", "spanish" };
-                self->_viewModel->SetLanguage(languages[i]);
-                break;
-            }
-        }
-    }, this);
     return langOption;
 }
 
@@ -185,18 +174,11 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         // sort options
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
         _sortOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameDescendingIconTiles, sortNameDescendingIconTilesLen));
-        // _sortOptions[2].SetIconVramOffset(LoadIcon(objVramManager, recentIconTiles, recentIconTilesLen));
+    }
 
-        // language options
-        _languageOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, moviesIconTiles, moviesIconTilesLen));
-        _languageOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, musicIconTiles, musicIconTilesLen));
-
-        // filter options
-        // _filterOptions[0].SetIconVramOffset(LoadIcon(objVramManager, gamesIconTiles, gamesIconTilesLen));
-        // _filterOptions[1].SetIconVramOffset(LoadIcon(objVramManager, picturesIconTiles, picturesIconTilesLen));
-        // _filterOptions[2].SetIconVramOffset(LoadIcon(objVramManager, musicIconTiles, musicIconTilesLen));
-        // _filterOptions[3].SetIconVramOffset(LoadIcon(objVramManager, moviesIconTiles, moviesIconTilesLen));
-        // _filterOptions[4].SetIconVramOffset(LoadIcon(objVramManager, unknownIconTiles, unknownIconTilesLen));
+    for (auto& langOption : _languageOptions)
+    {
+        langOption->InitVram(vramContext);
     }
 }
 
@@ -244,10 +226,8 @@ void DisplaySettingsBottomSheetView::Update()
     for (auto& langOption : _languageOptions)
     {
         langOption->SetPosition(x, _position.y + 102);
-        langOption->SetState(strcmp(languages[idx], currentLang) == 0
-            ? IconButtonView::State::ToggleSelected
-            : IconButtonView::State::ToggleUnselected);
-        x += 32;
+        langOption->SetSelected(strcmp(languages[idx], currentLang) == 0);
+        x += langOption->GetWidth() + 8;
         idx++;
     }
 }
@@ -268,9 +248,22 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         // _filtersLabel.SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         // _filtersLabel.SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         BottomSheetView::Draw(graphicsContext);
+        for (auto& langOption : _languageOptions)
+        {
+            langOption->Draw(graphicsContext);
+        }
     }
     graphicsContext.SetPriority(oldPrio);
     graphicsContext.ResetClipArea();
+}
+
+void DisplaySettingsBottomSheetView::VBlank()
+{
+    BottomSheetView::VBlank();
+    for (auto& langOption : _languageOptions)
+    {
+        langOption->VBlank();
+    }
 }
 
 bool DisplaySettingsBottomSheetView::HandleInput(
@@ -281,7 +274,35 @@ bool DisplaySettingsBottomSheetView::HandleInput(
         _viewModel->Close();
         return true;
     }
+    if (inputProvider.Triggered(InputKey::A))
+    {
+        auto currentFocus = focusManager.GetCurrentFocus();
+        const char* languages[] = { "english", "spanish" };
+        for (u32 i = 0; i < _languageOptions.size(); i++)
+        {
+            if (currentFocus.GetPointer() == _languageOptions[i].GetPointer())
+            {
+                _viewModel->SetLanguage(languages[i]);
+                return true;
+            }
+        }
+    }
     return false;
+}
+
+void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
+{
+    BottomSheetView::HandlePenDown(touchPoint, focusManager);
+    const char* languages[] = { "english", "spanish" };
+    for (u32 i = 0; i < _languageOptions.size(); i++)
+    {
+        if (_languageOptions[i]->GetBounds().Contains(touchPoint))
+        {
+            focusManager.Focus(_languageOptions[i]);
+            _viewModel->SetLanguage(languages[i]);
+            break;
+        }
+    }
 }
 
 SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>& currentFocus,
