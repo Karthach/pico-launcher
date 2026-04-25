@@ -20,6 +20,7 @@
 #include "core/task/TaskQueue.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "romBrowser/viewModels/RomBrowserBottomScreenViewModel.h"
+#include "romBrowser/viewModels/DisplaySettingsViewModel.h"
 #include "romBrowser/viewModels/ThemeSettingsViewModel.h"
 #include "romBrowser/views/RomBrowserBottomScreenView.h"
 
