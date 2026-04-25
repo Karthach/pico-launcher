@@ -1,7 +1,4 @@
 #pragma once
-#include <map>
-#include <string>
-#include <vector>
 #include <memory>
 #include "ILocalizationService.h"
 #include "core/String.h"
@@ -12,11 +9,12 @@ class JsonLocalizationService : public ILocalizationService
 {
     struct StringEntry
     {
-        std::string key;
+        String<char, 32> key;
         std::unique_ptr<char16_t[]> value;
     };
 
-    std::vector<StringEntry> _strings;
+    StringEntry _strings[32];
+    u32 _stringCount = 0;
 
 public:
     explicit JsonLocalizationService(IAppSettingsService& appSettingsService);
