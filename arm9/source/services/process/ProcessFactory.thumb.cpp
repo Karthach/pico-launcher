@@ -1,6 +1,8 @@
 #include "common.h"
 #include "core/di.h"
 #include "services/settings/JsonAppSettingsService.h"
+#include "services/localization/ILocalizationService.h"
+#include "services/localization/JsonLocalizationService.h"
 #include "bgm/AudioStreamPlayer.h"
 #include "bgm/IBgmService.h"
 #include "bgm/BgmService.h"
@@ -28,7 +30,8 @@ static auto diConfig = [] { return di::make_injector<injected_and_bound>(
     di::bind<IAudioStreamPlayer>().to<AudioStreamPlayer>(),
     di::bind<IBgmService>().in(di::singleton).to<BgmService>(),
     di::bind<>().to((const char*)"/_pico/settings.json"),
-    di::bind<IAppSettingsService>().in(di::singleton).to<JsonAppSettingsService>()
+    di::bind<IAppSettingsService>().in(di::singleton).to<JsonAppSettingsService>(),
+    di::bind<ILocalizationService>().in(di::singleton).to<JsonLocalizationService>()
 ); };
 
 #define REGISTER_PROCESS(name)  template <> std::unique_ptr<IProcess> ProcessFactory::Construct<name>() { return diConfig().create<std::unique_ptr<name>>(); }

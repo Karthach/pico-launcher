@@ -32,7 +32,7 @@
 
 #define SPLASH_FRAMES       44
 
-App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService)
+App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILocalizationService& localizationService)
     : _mainObjPltt(GFX_PLTT_OBJ_MAIN)
     , _mainObjVram(GFX_OBJ_MAIN)
     , _mainObjDialogVram(GFX_OBJ_MAIN, 128 * 1024)
@@ -43,6 +43,7 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService)
     , _subVramContext(nullptr, &_subObjVram, nullptr, nullptr)
     , _appSettingsService(appSettingsService)
     , _bgmService(bgmService)
+    , _localizationService(localizationService)
     , _inputProvider(&_keyInputSource, &_touchInputSource)
     , _inputRepeater(&_inputProvider,
         InputKey::DpadLeft | InputKey::DpadRight | InputKey::DpadUp | InputKey::DpadDown | InputKey::L | InputKey::R,
@@ -316,7 +317,7 @@ void App::HandleShowGameInfoTrigger()
 
     auto cheatsViewModel = SharedPtr<CheatsViewModel>::MakeShared(_romBrowserController.GetTriggerFileInfo(), &_romBrowserController);
     auto cheatsDialog = CheatsBottomSheetView::CreateShared(
-        std::move(cheatsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager);
+        std::move(cheatsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager, _localizationService);
     _dialogPresenter.ShowDialog(std::move(cheatsDialog));
 }
 
@@ -330,7 +331,7 @@ void App::HandleHideGameInfoTrigger()
 void App::HandleShowDisplaySettingsTrigger()
 {
     auto displaySettingsDialog = DisplaySettingsBottomSheetView::CreateShared(
-        &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     displaySettingsDialog->SetGraphics(_iconButtonViewVram);
     _dialogPresenter.ShowDialog(std::move(displaySettingsDialog));
 }
@@ -345,7 +346,7 @@ void App::HandleHideDisplaySettingsTrigger()
 void App::HandleShowThemeSettingsTrigger()
 {
     auto themeSettingsDialog = ThemeSettingsBottomSheetView::CreateShared(
-        &_themeSettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        &_themeSettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     themeSettingsDialog->SetGraphics(_chipViewVram);
     _dialogPresenter.ShowDialog(std::move(themeSettingsDialog));
 }

@@ -33,10 +33,12 @@
 #include "themes/ITheme.h"
 #include "animation/Animator.h"
 
+#include "services/localization/ILocalizationService.h"
+
 class alignas(32) App : public IProcess
 {
 public:
-    App(IAppSettingsService& appSettingsService, IBgmService& bgmService);
+    App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILocalizationService& localizationService);
 
     void Run() override;
     void Exit() override;
@@ -76,6 +78,7 @@ private:
 
     IAppSettingsService& _appSettingsService;
     IBgmService& _bgmService;
+    ILocalizationService& _localizationService;
     volatile bool _exit = false;
 
     PadInputSource _keyInputSource;

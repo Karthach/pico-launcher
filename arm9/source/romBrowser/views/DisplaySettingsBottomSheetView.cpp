@@ -19,6 +19,7 @@
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
+#include "services/localization/ILocalizationService.h"
 #include "DisplaySettingsBottomSheetView.h"
 
 #define TITLE_LABEL_X       20
@@ -50,7 +51,7 @@ static RomBrowserSortMode sRomBrowserSortModes[4] =
 
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     DisplaySettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
-    const IFontRepository* fontRepository)
+    const IFontRepository* fontRepository, ILocalizationService& localizationService)
     : _viewModel(viewModel)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
@@ -58,11 +59,11 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _materialColorScheme(materialColorScheme)
     // , _filtersLabel(64, 16, 25, fontRepository->GetFont(FontType::Regular10))
 {
-    _titleLabel->SetText(u"Display Settings");
+    _titleLabel->SetText(localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
-    _layoutLabel->SetText(u"Layout");
+    _layoutLabel->SetText(localizationService.GetString("display_settings_layout"));
     AddChildTail(_layoutLabel.GetPointer());
-    _sortingLabel->SetText(u"Sorting");
+    _sortingLabel->SetText(localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
     // _filtersLabel.SetText(u"Filters");
     // AddChildTail(&_filtersLabel);

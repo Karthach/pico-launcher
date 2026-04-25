@@ -3,6 +3,8 @@
 #include "ChipView.h"
 #include "../viewModels/ThemeSettingsViewModel.h"
 
+class ILocalizationService;
+
 class ThemeSettingsBottomSheetView : public BottomSheetView
 {
     SHARED_ONLY(ThemeSettingsBottomSheetView)
@@ -32,5 +34,6 @@ private:
 
     ThemeSettingsBottomSheetView(ThemeSettingsViewModel* viewModel,
         const MaterialColorScheme* materialColorScheme,
-        const IFontRepository* fontRepository);
+        const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 };

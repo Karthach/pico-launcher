@@ -11,6 +11,7 @@
 
 class MaterialColorScheme;
 class IFontRepository;
+class ILocalizationService;
 class IVramManager;
 
 /// @brief Bottom sheet for browsing and enabling/disabling cheats.
@@ -51,7 +52,7 @@ private:
 
     CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewModel,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
-        FocusManager* focusManager);
+        FocusManager* focusManager, ILocalizationService& localizationService);
 
     void UpdateCheatList();
     void UpdateDescriptionText();

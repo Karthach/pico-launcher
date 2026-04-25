@@ -2,6 +2,7 @@
 #include "gui/GraphicsContext.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
+#include "services/localization/ILocalizationService.h"
 #include "gui/input/InputProvider.h"
 #include "gui/VramContext.h"
 #include "gui/palette/GradientPalette.h"
@@ -36,7 +37,7 @@
 
 CheatsBottomSheetView::CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewModel,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
-    FocusManager* focusManager)
+    FocusManager* focusManager, ILocalizationService& localizationService)
     : _viewModel(std::move(viewModel))
     , _titleLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _secondaryLabel(Label2DView::CreateShared(153, 16, 64, fontRepository->GetFont(FontType::Regular10)))
@@ -52,8 +53,8 @@ CheatsBottomSheetView::CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewMode
     , _fontRepository(fontRepository)
     , _focusManager(focusManager)
 {
-    _titleLabel->SetText(u"Cheats");
-    _secondaryLabel->SetText(u"No cheats found.");
+    _titleLabel->SetText(localizationService.GetString("cheats_title"));
+    _secondaryLabel->SetText(localizationService.GetString("cheats_no_cheats"));
     _secondaryLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
     _descriptionLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Marquee);
     _descriptionLabel->SetText(u"");

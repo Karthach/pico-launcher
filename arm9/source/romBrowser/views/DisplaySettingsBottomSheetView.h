@@ -8,6 +8,7 @@
 class IRomBrowserController;
 class MaterialColorScheme;
 class IFontRepository;
+class ILocalizationService;
 
 class DisplaySettingsBottomSheetView : public BottomSheetView
 {
@@ -50,7 +51,8 @@ private:
     // IconButton2DView CreateFilterOptionIconButton();
 
     DisplaySettingsBottomSheetView(DisplaySettingsViewModel* viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 
     void UpdateLabels();
 

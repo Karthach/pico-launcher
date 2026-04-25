@@ -5,6 +5,7 @@
 
 class IRomBrowserController;
 class IFontRepository;
+class ILocalizationService;
 
 class NdsGameDetailsBottomSheetView : public BottomSheetView
 {
@@ -44,5 +45,6 @@ private:
     NdsGameDetailsBottomSheetView(
         IRomBrowserController* romBrowserController,
         const MaterialColorScheme* materialColorScheme,
-        const IFontRepository* fontRepository);
+        const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 };

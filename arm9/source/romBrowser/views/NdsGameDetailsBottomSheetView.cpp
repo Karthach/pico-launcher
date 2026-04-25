@@ -7,19 +7,20 @@
 #include "smallHeartIcon.h"
 #include "smallHeartIconFilled.h"
 #include "../IRomBrowserController.h"
+#include "services/localization/ILocalizationService.h"
 #include "NdsGameDetailsBottomSheetView.h"
 
 NdsGameDetailsBottomSheetView::NdsGameDetailsBottomSheetView(
     IRomBrowserController* romBrowserController, const MaterialColorScheme* materialColorScheme,
-    const IFontRepository* fontRepository)
+    const IFontRepository* fontRepository, ILocalizationService& localizationService)
     : _romBrowserController(romBrowserController)
     , _cheatsChip(ChipView::CreateShared(md::sys::color::surfaceContainerLow, materialColorScheme, fontRepository))
     , _favoriteChip(ChipView::CreateShared(md::sys::color::surfaceContainerLow, materialColorScheme, fontRepository))
 {
-    _cheatsChip->SetText(u"Cheats");
+    _cheatsChip->SetText(localizationService.GetString("game_details_cheats"));
     _cheatsChip->SetSelected(false);
     AddChildTail(_cheatsChip.GetPointer());
-    _favoriteChip->SetText(u"Favorite");
+    _favoriteChip->SetText(localizationService.GetString("game_details_favorite"));
     _favoriteChip->SetSelected(true);
     AddChildTail(_favoriteChip.GetPointer());
 }

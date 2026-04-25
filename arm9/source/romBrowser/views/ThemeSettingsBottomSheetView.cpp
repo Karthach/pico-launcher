@@ -5,6 +5,7 @@
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
+#include "services/localization/ILocalizationService.h"
 #include "ThemeSettingsBottomSheetView.h"
 
 #define TITLE_LABEL_X       20
@@ -12,13 +13,13 @@
 
 ThemeSettingsBottomSheetView::ThemeSettingsBottomSheetView(
     ThemeSettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
-    const IFontRepository* fontRepository)
+    const IFontRepository* fontRepository, ILocalizationService& localizationService)
     : _viewModel(viewModel)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _materialColorScheme(materialColorScheme)
 {
     _viewModel->RefreshThemes();
-    _titleLabel->SetText(u"Theme Settings");
+    _titleLabel->SetText(localizationService.GetString("theme_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
 
     for (int i = 0; i < 8; i++)
