@@ -1,8 +1,24 @@
 # Changelog
 
-## [Unreleased]
+## [v1.0.2] - 25 Apr 2026
 
-## [v1.3.0] - 18 Apr 2026
+### Added
+- Multi-language support via JSON files (`/_pico/lang/`)
+- Language selection integrated into the Display Settings menu
+- English and Spanish translations included by default
+
+### Changed
+- UI labels now dynamically load based on selected language
+- Display Settings menu layout optimized for localized text
+
+### Fixed
+- Memory management issues with large JSON files on NDS hardware
+- Navigation and interaction bugs in settings bottom sheets
+
+## [v1.0.1] - 25 Apr 2026
+
+### Changed
+- Baseline for public release and nightly builds
 
 ### Added
 - Ability to set the position of the top screen cover image in custom themes
