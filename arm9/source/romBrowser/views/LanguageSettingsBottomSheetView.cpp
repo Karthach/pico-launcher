@@ -48,7 +48,7 @@ void LanguageSettingsBottomSheetView::Update()
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
     for (int i = 0; i < 2; i++)
     {
-        _languageChips[i]->SetPosition(20 + (i % 2) * 110, _position.y + 40 + (i / 2) * 30);
+        _languageChips[i]->SetPosition(20 + (i % 2) * 110, _position.y + 60 + (i / 2) * 40);
     }
     BottomSheetView::Update();
 }
@@ -76,6 +76,11 @@ void LanguageSettingsBottomSheetView::VBlank()
 
 bool LanguageSettingsBottomSheetView::HandleInput(const InputProvider& inputProvider, FocusManager& focusManager)
 {
+    if (inputProvider.Triggered(InputKey::B))
+    {
+        Close();
+        return true;
+    }
     if (inputProvider.Triggered(InputKey::A))
     {
         for (int i = 0; i < 2; i++)
