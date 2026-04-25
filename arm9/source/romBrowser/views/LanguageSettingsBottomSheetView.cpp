@@ -5,6 +5,7 @@
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
+#include "gui/views/Label2DView.h"
 #include "services/localization/ILocalizationService.h"
 #include "LanguageSettingsBottomSheetView.h"
 

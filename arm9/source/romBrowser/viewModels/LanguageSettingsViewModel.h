@@ -1,6 +1,7 @@
 #pragma once
+#include <string.h>
 #include "../IRomBrowserController.h"
-#include "services/settings/IAppSettingsService.h"
+#include "../../../services/settings/IAppSettingsService.h"
 
 class LanguageSettingsViewModel
 {
