@@ -15,7 +15,8 @@
 LanguageSettingsBottomSheetView::LanguageSettingsBottomSheetView(
     LanguageSettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
     const IFontRepository* fontRepository, ILocalizationService& localizationService)
-    : _viewModel(viewModel)
+    : BottomSheetView(materialColorScheme)
+    , _viewModel(viewModel)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _materialColorScheme(materialColorScheme)
 {
@@ -51,7 +52,7 @@ void LanguageSettingsBottomSheetView::Update()
 
     for (int i = 0; i < 2; i++)
     {
-        _languageChips[i]->SetPosition(20 + (i % 2) * 110, _position.y + 46 + (i / 2) * 30);
+        _languageChips[i]->SetPosition(20 + i * 110, _position.y + 46);
         _languageChips[i]->SetSelected(strcmp(languages[i], currentLang) == 0);
     }
 }
