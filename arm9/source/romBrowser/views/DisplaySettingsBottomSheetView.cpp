@@ -32,7 +32,7 @@
 #define SORTING_LABEL_Y     74
 
 #define LANGUAGE_LABEL_X     20
-#define LANGUAGE_LABEL_Y     106
+#define LANGUAGE_LABEL_Y     112
 
 static RomBrowserLayout sRomBrowserDisplayModes[4] =
 {
@@ -225,7 +225,7 @@ void DisplaySettingsBottomSheetView::Update()
     const char* languages[] = { "english", "spanish" };
     for (auto& langOption : _languageOptions)
     {
-        langOption->SetPosition(x, _position.y + (LANGUAGE_LABEL_Y - 10));
+        langOption->SetPosition(x, _position.y + (LANGUAGE_LABEL_Y - 3));
         langOption->SetSelected(strcmp(languages[idx], currentLang) == 0);
         x += langOption->GetWidth() + 8;
         idx++;
