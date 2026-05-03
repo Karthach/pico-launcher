@@ -68,6 +68,8 @@ static const char* serializeRomBrowserSortMode(RomBrowserSortMode romBrowserSort
             return "NameDescending";
         case RomBrowserSortMode::LastModified:
             return "LastModified";
+        case RomBrowserSortMode::TitleAscending:
+            return "TitleAscending";
         default:
             return "";
     }
@@ -85,6 +87,8 @@ static bool tryParseRomBrowserSortMode(
         romBrowserSortMode = RomBrowserSortMode::NameDescending;
     else if (!strcasecmp(romBrowserDisplayModeString, "LastModified"))
         romBrowserSortMode = RomBrowserSortMode::LastModified;
+    else if (!strcasecmp(romBrowserDisplayModeString, "TitleAscending"))
+        romBrowserSortMode = RomBrowserSortMode::TitleAscending;
     else
         return false;
 

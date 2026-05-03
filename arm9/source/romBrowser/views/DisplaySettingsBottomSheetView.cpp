@@ -42,11 +42,11 @@ static RomBrowserLayout sRomBrowserDisplayModes[4] =
     [3] = RomBrowserLayout::CoverFlow
 };
 
-static RomBrowserSortMode sRomBrowserSortModes[4] =
+static RomBrowserSortMode sRomBrowserSortModes[3] =
 {
     [0] = RomBrowserSortMode::NameAscending,
     [1] = RomBrowserSortMode::NameDescending,
-    [2] = RomBrowserSortMode::LastModified
+    [2] = RomBrowserSortMode::TitleAscending
 };
 
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
@@ -174,6 +174,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         // sort options
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
         _sortOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameDescendingIconTiles, sortNameDescendingIconTilesLen));
+        _sortOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
     }
 
     for (auto& langOption : _languageOptions)

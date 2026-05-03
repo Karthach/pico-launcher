@@ -3,5 +3,6 @@
 enum class SdFolderSortType
 {
     Name,
-    LastModified
+    LastModified,
+    Title
 };

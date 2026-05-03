@@ -28,6 +28,12 @@ RomBrowserViewModel::RomBrowserViewModel(IRomBrowserController* romBrowserContro
                 SdFolderSortType::LastModified, SdFolderSortDirection::Descending, false);
             break;
         }
+        case RomBrowserSortMode::TitleAscending:
+        {
+            filterSortParams = SdFolderFilterSortParams(
+                SdFolderSortType::Title, SdFolderSortDirection::Ascending, false);
+            break;
+        }
     }
     u64 startTick = gTickCounter.GetValue();
     const auto& sdFolder = romBrowserController->GetSdFolder();
