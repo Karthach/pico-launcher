@@ -66,6 +66,10 @@ SharedPtr<View> RomBrowserView::MoveFocus(const SharedPtr<View>& currentFocus, F
 void RomBrowserView::JumpToLetter(char16_t letter, FocusManager& focusManager)
 {
     if (!_fileRecyclerAdapter) return;
+    
+    // Prioritize new tasks by canceling old ones
+    _viewModel->GetIoTaskQueue()->CancelAllTasks();
+
     u32 count = _viewModel->GetFileInfoManager().GetItemCount();
     int targetIdx = -1;
     for (u32 i = 0; i < count; i++)

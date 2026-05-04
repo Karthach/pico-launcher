@@ -24,6 +24,7 @@ public:
     }
 
     void LoadFileInfo(int index);
+    void LoadFileInfo(int index, const vu8& cancelRequested);
 
     void ReleaseFileInfo(int index);
 

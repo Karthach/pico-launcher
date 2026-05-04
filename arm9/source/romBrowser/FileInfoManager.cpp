@@ -17,10 +17,25 @@ FileInfoManager::~FileInfoManager()
 
 void FileInfoManager::LoadFileInfo(int index)
 {
+    static const vu8 dummyCancel = 0;
+    LoadFileInfo(index, dummyCancel);
+}
+
+void FileInfoManager::LoadFileInfo(int index, const vu8& cancelRequested)
+{
+    if (cancelRequested) return;
+
     auto internalFileInfo = _extraFileInfo[index].internalFileInfo;
     if (!internalFileInfo)
     {
         internalFileInfo = _items[index]->CreateInternalFileInfo();
+    }
+
+    if (cancelRequested)
+    {
+        if (internalFileInfo != _extraFileInfo[index].internalFileInfo)
+            delete internalFileInfo;
+        return;
     }
 
     if (!_extraFileInfo[index].fileCover.Lock())

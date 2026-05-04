@@ -30,6 +30,16 @@ void TaskQueueBase::ThreadMain()
     }
 }
 
+void TaskQueueBase::CancelAllTasks()
+{
+    u32 irqs = rtos_disableIrqs();
+    for (auto& task : _taskList)
+    {
+        task.RequestCancel();
+    }
+    rtos_restoreIrqs(irqs);
+}
+
 void QueueTaskBase::Dispose()
 {
     if (_task)

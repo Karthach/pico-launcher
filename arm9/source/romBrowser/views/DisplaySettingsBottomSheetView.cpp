@@ -15,6 +15,7 @@
 #include "moviesIcon.h"
 #include "unknownIcon.h"
 #include "coverflowIcon.h"
+#include "upIcon.h"
 #include "../IRomBrowserController.h"
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
@@ -31,18 +32,23 @@
 #define LAYOUT_NAME_X       20
 #define LAYOUT_NAME_Y       52
 
+#define LAYOUT_CONTAINER_X      120
+#define LAYOUT_CONTAINER_WIDTH  110
+#define LAYOUT_CONTAINER_HEIGHT 32
+
 #define SORTING_LABEL_X     20
 #define SORTING_LABEL_Y     82
 
 #define LANGUAGE_LABEL_X     20
 #define LANGUAGE_LABEL_Y     120
 
-static RomBrowserLayout sRomBrowserDisplayModes[4] =
+static RomBrowserLayout sRomBrowserDisplayModes[] =
 {
-    [0] = RomBrowserLayout::HorizontalIconGrid,
-    [1] = RomBrowserLayout::VerticalIconGrid,
-    [2] = RomBrowserLayout::BannerList,
-    [3] = RomBrowserLayout::CoverFlow
+    RomBrowserLayout::HorizontalIconGrid,
+    RomBrowserLayout::VerticalIconGrid,
+    RomBrowserLayout::BannerList,
+    RomBrowserLayout::CoverFlow,
+    RomBrowserLayout::InvertedCoverFlow
 };
 
 static RomBrowserSortMode sRomBrowserSortModes[3] =
@@ -62,6 +68,9 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _layoutScrollX(0)
+    , _isDraggingLayout(false)
+    , _isManualScroll(false)
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
 {
@@ -75,10 +84,10 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     _languageLabel->SetText(_localizationService.GetString("language_settings_title"));
     AddChildTail(_languageLabel.GetPointer());
 
-    for (auto& layoutOption : _layoutOptions)
+    for (u32 i = 0; i < _layoutOptions.size(); i++)
     {
-        layoutOption = CreateLayoutOptionIconButton();
-        AddChildTail(layoutOption.GetPointer());
+        _layoutOptions[i] = CreateLayoutOptionIconButton();
+        // Do NOT add to child list, we draw manually with clipping
     }
 
     for (auto& sortOption : _sortOptions)
@@ -112,6 +121,7 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLayoutOptionIc
             if (self->_layoutOptions[i].GetPointer() == sender)
             {
                 self->_viewModel->SetRomBrowserDisplayMode(sRomBrowserDisplayModes[i]);
+                self->_isManualScroll = false; // Center on click
                 break;
             }
         }
@@ -152,18 +162,6 @@ SharedPtr<ChipView> DisplaySettingsBottomSheetView::CreateLanguageOptionChip()
     return langOption;
 }
 
-// IconButtonView DisplaySettingsBottomSheetView::CreateFilterOptionIconButton()
-// {
-//     IconButtonView filterOption
-//     {
-//         IconButtonView::Type::Tonal,
-//         IconButtonView::State::ToggleUnselected,
-//         md::sys::color::surfaceContainerLow,
-//         _materialColorScheme
-//     };
-//     return filterOption;
-// }
-
 void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
 {
     BottomSheetView::InitVram(vramContext);
@@ -176,6 +174,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _layoutOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, vGridIconTiles, vGridIconTilesLen));
         _layoutOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, bannerListIconTiles, bannerListIconTilesLen));
         _layoutOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, coverflowIconTiles, coverflowIconTilesLen));
+        _layoutOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, upIconTiles, upIconTilesLen)); // Using upIcon as placeholder
 
         // sort options
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
@@ -184,6 +183,11 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
     }
 
     _layoutNameLabel->InitVram(vramContext);
+
+    for (auto& layoutOption : _layoutOptions)
+    {
+        layoutOption->InitVram(vramContext);
+    }
 
     for (auto& langOption : _languageOptions)
     {
@@ -210,12 +214,12 @@ void DisplaySettingsBottomSheetView::Update()
         "layout_horizontal_icon_grid",
         "layout_vertical_icon_grid",
         "layout_banner_list",
-        "layout_cover_flow"
+        "layout_cover_flow",
+        "layout_inverted_cover_flow"
     };
 
-    // Find index of selectedDisplayMode in sRomBrowserDisplayModes
     int layoutIdx = 0;
-    for (u32 i = 0; i < sizeof(sRomBrowserDisplayModes) / sizeof(sRomBrowserDisplayModes[0]); i++)
+    for (u32 i = 0; i < (u32)_layoutOptions.size(); i++)
     {
         if (sRomBrowserDisplayModes[i] == selectedDisplayMode)
         {
@@ -226,17 +230,31 @@ void DisplaySettingsBottomSheetView::Update()
     
     _layoutNameLabel->SetText(_localizationService.GetString(layoutKeys[layoutIdx]));
 
-    int x = 120;
+    // Auto-scroll logic
+    if (!_isManualScroll)
+    {
+        int targetX = -(layoutIdx * 32);
+        int maxX = 0;
+        int minX = LAYOUT_CONTAINER_WIDTH - ((int)_layoutOptions.size() * 32);
+        if (targetX > maxX) targetX = maxX;
+        if (targetX < minX) targetX = minX;
+        
+        _layoutScrollX = targetX; 
+    }
+
+    int x = 0;
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(x, _position.y + (LAYOUT_LABEL_Y - 3));
+        layoutOption->SetPosition(LAYOUT_CONTAINER_X + _layoutScrollX + x, _position.y + (LAYOUT_LABEL_Y - 3));
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
+        layoutOption->Update();
         x += 32;
         idx++;
     }
+
     auto selectedSortMode = _viewModel->GetRomBrowserSortMode();
     x = 120;
     idx = 0;
@@ -249,6 +267,7 @@ void DisplaySettingsBottomSheetView::Update()
         x += 32;
         idx++;
     }
+
     auto currentLang = _viewModel->GetLanguage();
     x = 120;
     idx = 0;
@@ -279,6 +298,16 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _languageLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         
         BottomSheetView::Draw(graphicsContext);
+
+        // Clip layout options
+        Rectangle layoutClip(LAYOUT_CONTAINER_X, _position.y + (LAYOUT_LABEL_Y - 8), LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
+        graphicsContext.SetClipArea(layoutClip);
+        for (auto& layoutOption : _layoutOptions)
+        {
+            layoutOption->Draw(graphicsContext);
+        }
+        graphicsContext.SetClipArea(GetBounds());
+
         for (auto& langOption : _languageOptions)
         {
             langOption->Draw(graphicsContext);
@@ -291,6 +320,10 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 void DisplaySettingsBottomSheetView::VBlank()
 {
     BottomSheetView::VBlank();
+    for (auto& layoutOption : _layoutOptions)
+    {
+        layoutOption->VBlank();
+    }
     for (auto& langOption : _languageOptions)
     {
         langOption->VBlank();
@@ -308,6 +341,14 @@ bool DisplaySettingsBottomSheetView::HandleInput(
     if (inputProvider.Triggered(InputKey::A))
     {
         auto currentFocus = focusManager.GetCurrentFocus();
+        for (auto& layoutOption : _layoutOptions)
+        {
+            if (currentFocus.GetPointer() == layoutOption.GetPointer())
+            {
+                layoutOption->HandleInput(inputProvider, focusManager);
+                return true;
+            }
+        }
         const char* languages[] = { "english", "spanish" };
         for (u32 i = 0; i < _languageOptions.size(); i++)
         {
@@ -324,6 +365,24 @@ bool DisplaySettingsBottomSheetView::HandleInput(
 void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenDown(touchPoint, focusManager);
+    
+    Rectangle layoutRect(LAYOUT_CONTAINER_X, _position.y + (LAYOUT_LABEL_Y - 8), LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
+    if (layoutRect.Contains(touchPoint))
+    {
+        _isDraggingLayout = true;
+        _isManualScroll = true;
+        _lastTouchPoint = touchPoint;
+    }
+
+    for (auto& layoutOption : _layoutOptions)
+    {
+        // Adjust touch check for clipped area
+        if (layoutRect.Contains(touchPoint) && layoutOption->GetBounds().Contains(touchPoint))
+        {
+            layoutOption->HandlePenDown(touchPoint, focusManager);
+        }
+    }
+
     const char* languages[] = { "english", "spanish" };
     for (u32 i = 0; i < _languageOptions.size(); i++)
     {
@@ -333,6 +392,31 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
             _viewModel->SetLanguage(languages[i]);
             break;
         }
+    }
+}
+
+void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
+{
+    BottomSheetView::HandlePenMove(touchPoint, focusManager);
+    if (_isDraggingLayout)
+    {
+        int dx = touchPoint.x - _lastTouchPoint.x;
+        _layoutScrollX += dx;
+        int maxX = 0;
+        int minX = LAYOUT_CONTAINER_WIDTH - ((int)_layoutOptions.size() * 32);
+        if (_layoutScrollX > maxX) _layoutScrollX = maxX;
+        if (_layoutScrollX < minX) _layoutScrollX = minX;
+        _lastTouchPoint = touchPoint;
+    }
+}
+
+void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
+{
+    BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
+    _isDraggingLayout = false;
+    for (auto& layoutOption : _layoutOptions)
+    {
+        layoutOption->HandlePenUp(lastTouchPoint, focusManager);
     }
 }
 
@@ -346,27 +430,19 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
         {
             if (direction == FocusMoveDirection::Left)
             {
-                if (--idx < 0)
-                    idx += _layoutOptions.size();
+                _isManualScroll = false;
+                if (--idx < 0) idx = 0;
                 return _layoutOptions[idx];
             }
             else if (direction == FocusMoveDirection::Right)
             {
-                if (++idx >= (int)_layoutOptions.size())
-                    idx = 0;
+                _isManualScroll = false;
+                if (++idx >= (int)_layoutOptions.size()) idx = _layoutOptions.size() - 1;
                 return _layoutOptions[idx];
             }
-            // else if (direction == FocusMoveDirection::Up)
-            // {
-            //     if (idx >= (int)_filterOptions.size())
-            //         idx = _filterOptions.size() - 1;
-            //     return &_filterOptions[idx];
-            // }
-            else //if (direction == FocusMoveDirection::Down)
+            else if (direction == FocusMoveDirection::Down)
             {
-                if (idx >= (int)_sortOptions.size())
-                    idx = _sortOptions.size() - 1;
-                return _sortOptions[idx];
+                return _sortOptions[0];
             }
         }
         idx++;
@@ -390,15 +466,20 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
             }
             else if (direction == FocusMoveDirection::Up)
             {
-                if (idx >= (int)_layoutOptions.size())
-                    idx = _layoutOptions.size() - 1;
-                return _layoutOptions[idx];
+                _isManualScroll = false;
+                auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
+                for (u32 i = 0; i < (u32)_layoutOptions.size(); i++)
+                {
+                    if (sRomBrowserDisplayModes[i] == selectedDisplayMode)
+                    {
+                        return _layoutOptions[i];
+                    }
+                }
+                return _layoutOptions[0];
             }
-            else //if (direction == FocusMoveDirection::Down)
+            else if (direction == FocusMoveDirection::Down)
             {
-                if (idx >= (int)_languageOptions.size())
-                    idx = _languageOptions.size() - 1;
-                return _languageOptions[idx];
+                return _languageOptions[0];
             }
         }
         idx++;
@@ -422,9 +503,7 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
             }
             else if (direction == FocusMoveDirection::Up)
             {
-                if (idx >= (int)_sortOptions.size())
-                    idx = _sortOptions.size() - 1;
-                return _sortOptions[idx];
+                return _sortOptions[0];
             }
         }
         idx++;

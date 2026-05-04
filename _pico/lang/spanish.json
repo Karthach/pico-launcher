@@ -11,5 +11,6 @@
   "layout_horizontal_icon_grid": "Iconos Horizontales",
   "layout_vertical_icon_grid": "Iconos Verticales",
   "layout_banner_list": "Lista de Banners",
-  "layout_cover_flow": "Carrusel"
+  "layout_cover_flow": "Carrusel",
+  "layout_inverted_cover_flow": "Carrusel Invertido"
 }

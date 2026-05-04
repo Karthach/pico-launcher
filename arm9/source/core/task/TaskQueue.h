@@ -83,6 +83,7 @@ protected:
 
 public:
     virtual void ReturnOwnership(TaskBase* task) = 0;
+    void CancelAllTasks();
 
     template <typename FuncType>
     [[gnu::noinline]]

@@ -20,11 +20,10 @@ void FileRecyclerAdapter::BindView(SharedPtr<View> view, int index) const
         }
 
         LOG_DEBUG("Started task to load %d\n", index);
-        _fileInfoManager->LoadFileInfo(index);
+        _fileInfoManager->LoadFileInfo(index, cancelRequested);
         auto internalFileInfo = _fileInfoManager->GetInternalFileInfo(index);
         if (cancelRequested)
         {
-            _fileInfoManager->ReleaseFileInfo(index);
             return TaskResult<void>::Canceled();
         }
         return BindView(view, index, internalFileInfo, cancelRequested);

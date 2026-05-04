@@ -6,5 +6,6 @@ enum class RomBrowserLayout
     VerticalIconGrid,
     BannerList,
     FileList,
-    CoverFlow
+    CoverFlow,
+    InvertedCoverFlow
 };

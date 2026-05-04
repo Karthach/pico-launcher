@@ -23,6 +23,8 @@ public:
     void VBlank() override;
     bool HandleInput(const InputProvider& inputProvider, FocusManager& focusManager) override;
     void HandlePenDown(const Point& touchPoint, FocusManager& focusManager) override;
+    void HandlePenMove(const Point& touchPoint, FocusManager& focusManager) override;
+    void HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager) override;
     SharedPtr<View> MoveFocus(const SharedPtr<View>& currentFocus,
         FocusMoveDirection direction, View* source) override;
 
@@ -47,9 +49,14 @@ private:
     SharedPtr<Label2DView> _sortingLabel;
     SharedPtr<Label2DView> _languageLabel;
 
-    std::array<SharedPtr<IconButton2DView>, 4> _layoutOptions;
+    std::array<SharedPtr<IconButton2DView>, 5> _layoutOptions;
     std::array<SharedPtr<IconButton2DView>, 3> _sortOptions;
     std::array<SharedPtr<ChipView>, 2> _languageOptions;
+
+    int _layoutScrollX = 0;
+    bool _isDraggingLayout = false;
+    bool _isManualScroll = false;
+    Point _lastTouchPoint;
 
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;

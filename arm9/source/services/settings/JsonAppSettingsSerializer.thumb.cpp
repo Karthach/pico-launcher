@@ -31,6 +31,8 @@ static const char* serializeRomBrowserLayout(RomBrowserLayout romBrowserLayout)
             return "FileList";
         case RomBrowserLayout::CoverFlow:
             return "CoverFlow";
+        case RomBrowserLayout::InvertedCoverFlow:
+            return "InvertedCoverFlow";
         default:
             return "";
     }
@@ -52,6 +54,8 @@ static bool tryParseRomBrowserLayout(
         romBrowserLayout = RomBrowserLayout::FileList;
     else if (!strcasecmp(romBrowserLayoutString, "CoverFlow"))
         romBrowserLayout = RomBrowserLayout::CoverFlow;
+    else if (!strcasecmp(romBrowserLayoutString, "InvertedCoverFlow"))
+        romBrowserLayout = RomBrowserLayout::InvertedCoverFlow;
     else
         return false;
 

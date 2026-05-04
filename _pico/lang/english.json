@@ -11,5 +11,6 @@
   "layout_horizontal_icon_grid": "Horizontal Icon Grid",
   "layout_vertical_icon_grid": "Vertical Icon Grid",
   "layout_banner_list": "Banner List",
-  "layout_cover_flow": "Cover Flow"
+  "layout_cover_flow": "Cover Flow",
+  "layout_inverted_cover_flow": "Inverted Cover Flow"
 }
