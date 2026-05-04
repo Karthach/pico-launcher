@@ -6,16 +6,22 @@ This repository contains Pico Launcher, which is a front-end for [Pico Loader](h
 ![Coverflow display mode](docs/images/Coverflow.png)
 
 ## Features
-- Can load homebrew and retail games using [Pico Loader](https://github.com/LNH-team/pico-loader).
-- Various display modes
-    - Horizontal and vertical icon grid
+- **Core Loading**: Load homebrew and retail games using [Pico Loader](https://github.com/LNH-team/pico-loader).
+- **Multi-language**: Built-in support for English and Spanish.
+- **Language Selector**: Easily switch between available languages in settings.
+- **Theme Selector**: Change the look and feel with a dedicated theme menu.
+- **Display Modes**:
+    - Horizontal icon grid
+    - Vertical icon grid
     - Banner list
     - Coverflow
-- [File associations](docs/FileAssociations.md)
-- [Covers](docs/Covers.md)
-- [Material Design 3 and custom themes](docs/Themes.md)
-- Support for background music (see [Themes](docs/Themes.md))
-- Support for cheats (See [Cheats](docs/Cheats.md))
+    - Inverted Coverflow
+- **Game Sorting**: Sort your library by Name, Date, or Title.
+- **File Associations**: Support for various file types (see [File associations](docs/FileAssociations.md)).
+- **Covers**: Support for custom game covers (see [Covers](docs/Covers.md)).
+- **Theming**: Support for [Material Design 3 and custom themes](docs/Themes.md).
+- **Background Music**: Support for audio in themes (see [Themes](docs/Themes.md)).
+- **Cheats**: Comprehensive cheat support (see [Cheats](docs/Cheats.md)).
 
 General usage documentation can be found here: [Usage](docs/Usage.md).
 
@@ -42,6 +48,9 @@ For DSpico the final directory structure will look like this:
 ```
 .
 ├── _pico
+│   ├── lang
+│   │   ├── english.json
+│   │   └── spanish.json
 │   ├── themes
 │   │   ├── material
 │   │   │   └── theme.json
