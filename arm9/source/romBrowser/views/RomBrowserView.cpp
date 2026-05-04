@@ -62,3 +62,45 @@ SharedPtr<View> RomBrowserView::MoveFocus(const SharedPtr<View>& currentFocus, F
     }
     return nullptr;
 }
+
+void RomBrowserView::JumpToLetter(char16_t letter, FocusManager& focusManager)
+{
+    if (!_fileRecyclerAdapter) return;
+    u32 count = _viewModel->GetFileInfoManager().GetItemCount();
+    int targetIdx = -1;
+    for (u32 i = 0; i < count; i++)
+    {
+        const auto& item = _viewModel->GetFileInfoManager().GetItem(i);
+        char16_t firstChar = 0;
+
+        // Try title first if it exists
+        auto internalInfo = _viewModel->GetFileInfoManager().GetInternalFileInfo(i);
+        if (internalInfo)
+        {
+            const char16_t* title = internalInfo->GetGameTitle();
+            if (title && title[0]) firstChar = title[0];
+        }
+
+        // Fallback to filename
+        if (firstChar == 0)
+        {
+            firstChar = (char16_t)item.GetFileName()[0];
+        }
+
+        // Convert to uppercase for comparison if it's a latin letter
+        if (firstChar >= 'a' && firstChar <= 'z') firstChar -= ('a' - 'A');
+        
+        if (firstChar >= letter)
+        {
+            targetIdx = i;
+            break;
+        }
+    }
+
+    if (targetIdx != -1)
+    {
+        _fileGridView->SetSelectedItem(targetIdx);
+        _viewModel->SetSelectedItem(targetIdx);
+        _fileGridView->Focus(focusManager);
+    }
+}

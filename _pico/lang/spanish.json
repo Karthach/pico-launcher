@@ -7,5 +7,9 @@
   "cheats_title": "Trucos",
   "cheats_no_cheats": "No se encontraron trucos.",
   "game_details_cheats": "Trucos",
-  "game_details_favorite": "Favorito"
+  "game_details_favorite": "Favorito",
+  "layout_horizontal_icon_grid": "Iconos Horizontales",
+  "layout_vertical_icon_grid": "Iconos Verticales",
+  "layout_banner_list": "Lista de Banners",
+  "layout_cover_flow": "Carrusel"
 }

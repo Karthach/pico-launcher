@@ -26,13 +26,16 @@
 #define TITLE_LABEL_Y       16
 
 #define LAYOUT_LABEL_X      20
-#define LAYOUT_LABEL_Y      42
+#define LAYOUT_LABEL_Y      38
+
+#define LAYOUT_NAME_X       20
+#define LAYOUT_NAME_Y       52
 
 #define SORTING_LABEL_X     20
-#define SORTING_LABEL_Y     74
+#define SORTING_LABEL_Y     82
 
 #define LANGUAGE_LABEL_X     20
-#define LANGUAGE_LABEL_Y     112
+#define LANGUAGE_LABEL_Y     120
 
 static RomBrowserLayout sRomBrowserDisplayModes[4] =
 {
@@ -53,20 +56,23 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     DisplaySettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
     const IFontRepository* fontRepository, ILocalizationService& localizationService)
     : _viewModel(viewModel)
+    , _localizationService(localizationService)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
 {
-    _titleLabel->SetText(localizationService.GetString("display_settings_title"));
+    _titleLabel->SetText(_localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
-    _layoutLabel->SetText(localizationService.GetString("display_settings_layout"));
+    _layoutLabel->SetText(_localizationService.GetString("display_settings_layout"));
     AddChildTail(_layoutLabel.GetPointer());
-    _sortingLabel->SetText(localizationService.GetString("display_settings_sorting"));
+    AddChildTail(_layoutNameLabel.GetPointer());
+    _sortingLabel->SetText(_localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
-    _languageLabel->SetText(localizationService.GetString("language_settings_title"));
+    _languageLabel->SetText(_localizationService.GetString("language_settings_title"));
     AddChildTail(_languageLabel.GetPointer());
 
     for (auto& layoutOption : _layoutOptions)
@@ -177,6 +183,8 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _sortOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
     }
 
+    _layoutNameLabel->InitVram(vramContext);
+
     for (auto& langOption : _languageOptions)
     {
         langOption->InitVram(vramContext);
@@ -187,9 +195,9 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
 {
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
     _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
+    _layoutNameLabel->SetPosition(LAYOUT_NAME_X, _position.y + LAYOUT_NAME_Y);
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
     _languageLabel->SetPosition(LANGUAGE_LABEL_X, _position.y + LANGUAGE_LABEL_Y);
-    // _filtersLabel.SetPosition(FILTERS_LABEL_X, _position.y + FILTERS_LABEL_Y);
 }
 
 void DisplaySettingsBottomSheetView::Update()
@@ -197,11 +205,32 @@ void DisplaySettingsBottomSheetView::Update()
     BottomSheetView::Update();
     UpdateLabels();
     auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
+
+    const char* layoutKeys[] = {
+        "layout_horizontal_icon_grid",
+        "layout_vertical_icon_grid",
+        "layout_banner_list",
+        "layout_cover_flow"
+    };
+
+    // Find index of selectedDisplayMode in sRomBrowserDisplayModes
+    int layoutIdx = 0;
+    for (u32 i = 0; i < sizeof(sRomBrowserDisplayModes) / sizeof(sRomBrowserDisplayModes[0]); i++)
+    {
+        if (sRomBrowserDisplayModes[i] == selectedDisplayMode)
+        {
+            layoutIdx = i;
+            break;
+        }
+    }
+    
+    _layoutNameLabel->SetText(_localizationService.GetString(layoutKeys[layoutIdx]));
+
     int x = 120;
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(x, _position.y + (LAYOUT_LABEL_Y - 8));
+        layoutOption->SetPosition(x, _position.y + (LAYOUT_LABEL_Y - 3));
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -242,12 +271,13 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _titleLabel->SetForegroundColor(_materialColorScheme->onSurface);
         _layoutLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _layoutLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _layoutNameLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _layoutNameLabel->SetForegroundColor(_materialColorScheme->primary);
         _sortingLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _sortingLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         _languageLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _languageLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
-        // _filtersLabel.SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
-        // _filtersLabel.SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        
         BottomSheetView::Draw(graphicsContext);
         for (auto& langOption : _languageOptions)
         {

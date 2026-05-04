@@ -1,5 +1,18 @@
 # Changelog
 
+## [v1.0.3] - 03 May 2026
+
+### Added
+- New sorting modes: Internal Title, File Size, and File Type
+- Alphabetical fast-navigation bar at the bottom for quick game access
+- Localized layout names in the Display Settings menu
+- Visual improvements to the Display Settings layout for better readability
+
+### Fixed
+- Fixed CoverFlow layout name showing as "??" in adjustments
+- Improved selection focus persistence when jumping to games
+- Optimized memory usage during sorting
+
 ## [v1.0.2] - 25 Apr 2026
 
 ### Added

@@ -145,6 +145,8 @@ void App::Run()
             _romBrowserController.GetRomBrowserDisplaySettings().layout),
         _materialThemeFileIconFactory.get(),
         _theme->GetRomBrowserViewFactory(),
+        _theme->GetFontRepository(),
+        &_theme->GetMaterialColorScheme(),
         &_vblankTextureLoader);
     _romBrowserBottomScreenView->InitVram(_mainVramContext);
 
@@ -402,6 +404,8 @@ void App::HandleChangeDisplayModeTrigger(RomBrowserState newState)
         displayMode,
         _materialThemeFileIconFactory.get(),
         _theme->GetRomBrowserViewFactory(),
+        _theme->GetFontRepository(),
+        &_theme->GetMaterialColorScheme(),
         &_vblankTextureLoader);
     _romBrowserBottomScreenView->InitVram(_mainVramContext);
     StoreVramState(_vramStateAfterMakeBottomScreenView);

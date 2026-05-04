@@ -60,6 +60,8 @@ public:
         return _selectedItem ? _selectedItem->itemIdx : -1;
     }
 
+    void SetSelectedItem(int itemIdx) override;
+
     constexpr Mode GetMode() const { return _mode; }
 
     void SetPadding(int x, int y)
@@ -115,7 +117,6 @@ private:
     ViewPoolEntry* BindViewPoolEntry(int itemIdx);
     void ReleaseRange(int start, int end);
     void ReleaseViewPoolEntry(int itemIdx);
-    void SetSelectedItem(int itemIdx);
     int GetMaxScrollOffset();
     void SetScrollOffset(int offset, bool animate);
     void EnsureVisible(int itemIdx, bool animate);

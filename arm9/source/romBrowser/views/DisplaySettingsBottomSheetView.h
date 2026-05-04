@@ -39,9 +39,11 @@ protected:
 
 private:
     DisplaySettingsViewModel* _viewModel;
+    ILocalizationService& _localizationService;
 
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<Label2DView> _layoutLabel;
+    SharedPtr<Label2DView> _layoutNameLabel;
     SharedPtr<Label2DView> _sortingLabel;
     SharedPtr<Label2DView> _languageLabel;
 

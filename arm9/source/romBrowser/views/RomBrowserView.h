@@ -34,6 +34,8 @@ public:
     SharedPtr<View> MoveFocus(
         const SharedPtr<View>& currentFocus, FocusMoveDirection direction, View* source) override;
 
+    void JumpToLetter(char16_t letter, FocusManager& focusManager);
+
 private:
     SharedPtr<RomBrowserViewModel> _viewModel;
     SharedPtr<RecyclerViewBase> _fileGridView;

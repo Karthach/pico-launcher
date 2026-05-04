@@ -52,6 +52,11 @@ protected:
     void BindRange(int start, int end);
     void ReleaseViewPoolEntry(int itemIdx);
     void ReleaseRange(int start, int end);
+    void SetSelectedItem(int itemIdx) override
+    {
+        SetSelectedItem(itemIdx, false);
+    }
+
     virtual void SetSelectedItem(int itemIdx, bool initial);
 
     virtual void SwapViewPoolEntry(int indexA, int indexB)

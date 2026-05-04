@@ -12,6 +12,7 @@ public:
     virtual void SetAdapter(SharedPtr<const RecyclerAdapter> adapter, int initialSelectedIndex = 0) = 0;
     virtual void Focus(FocusManager& focusManager) = 0;
     virtual int GetSelectedItem() const = 0;
+    virtual void SetSelectedItem(int itemIdx) = 0;
 
 protected:
     SharedPtr<const RecyclerAdapter> _adapter;
