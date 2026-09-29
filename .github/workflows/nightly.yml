@@ -42,6 +42,7 @@ jobs:
           cp -r _pico latest_build/
           zip -r Pico_Launcher_Latest.zip latest_build/*
       - name: Update Latest Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest

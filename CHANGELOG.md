@@ -1,37 +1,32 @@
 # Changelog
 
-## [v1.0.3] - 03 May 2026
+## [Unreleased]
 
 ### Added
-- New sorting modes: Internal Title, File Size, and File Type
-- Alphabetical fast-navigation bar at the bottom for quick game access
-- Localized layout names in the Display Settings menu
-- Visual improvements to the Display Settings layout for better readability
+- Support for custom BMP icons for games and folders - by @tasken
+- Support for custom NDS banners (custom titles, subtitles and animated icons) for games and folders - by @tasken
+- Theme selector
+- Support for custom folder covers via a cover.bmp file placed inside the folder - by @tasken
 
 ### Fixed
-- Fixed CoverFlow layout name showing as "??" in adjustments
-- Improved selection focus persistence when jumping to games
-- Optimized memory usage during sorting
+- Top screen cover is now displayed/hidden correctly when placed partially or fully off-screen
+- DSi banners with missing DSi part now fall back to the DS icon
+- Game-code cover lookup no longer searches on a stale buffer when a file has no game code
 
-## [v1.0.2] - 25 Apr 2026
+## [Fork additions] - May 2026
 
 ### Added
-- Multi-language support via JSON files (`/_pico/lang/`)
-- Language selection integrated into the Display Settings menu
-- English and Spanish translations included by default
-
-### Changed
-- UI labels now dynamically load based on selected language
-- Display Settings menu layout optimized for localized text
+- English and Spanish translations and a language selector in Display Settings
+- Sorting by internal game title
+- Alphabetical quick navigation and a scrollable layout selector
+- Inverted Coverflow mode
 
 ### Fixed
-- Memory management issues with large JSON files on NDS hardware
-- Navigation and interaction bugs in settings bottom sheets
+- Translation memory use and settings-sheet navigation
+- Selection focus after jumping to a game
+- CoverFlow layout name display
 
-## [v1.0.1] - 25 Apr 2026
-
-### Changed
-- Baseline for public release and nightly builds
+## [v1.3.0] - 18 Apr 2026
 
 ### Added
 - Ability to set the position of the top screen cover image in custom themes

@@ -28,10 +28,10 @@ SdFolder::~SdFolder()
 }
 
 std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
-    const SdFolderFilterSortParams& filterSortParams, int& resultCount) const
+    const SdFolderFilterSortParams& filterSortParams, u32& resultCount) const
 {
     auto sortedFilteredFiles = std::make_unique<const FileInfo*[]>(_fileCount);
-    int filteredCount = 0;
+    u32 filteredCount = 0;
     for (int i = 0; i < _fileCount; i++)
     {
         const FileInfo* file = _files[i];
@@ -56,20 +56,15 @@ std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
         for (int i = 0; i < filteredCount; i++)
         {
             titleEntries[i].fileInfo = sortedFilteredFiles[i];
-            if (titleEntries[i].fileInfo->GetFileType()->HasInternalFileInfo())
+            auto internalFileInfo = std::unique_ptr<InternalFileInfo>(
+                titleEntries[i].fileInfo->CreateInternalFileInfo());
+            const char16_t* title = internalFileInfo ? internalFileInfo->GetGameTitle() : nullptr;
+            if (title)
             {
-                auto internalFileInfo = std::unique_ptr<InternalFileInfo>(titleEntries[i].fileInfo->CreateInternalFileInfo());
-                if (internalFileInfo)
-                {
-                    const char16_t* title = internalFileInfo->GetGameTitle();
-                    if (title)
-                    {
-                        u32 len = 0;
-                        while (title[len]) len++;
-                        titleEntries[i].title = std::make_unique<char16_t[]>(len + 1);
-                        for (u32 j = 0; j <= len; j++) titleEntries[i].title[j] = title[j];
-                    }
-                }
+                u32 len = 0;
+                while (title[len]) len++;
+                titleEntries[i].title = std::make_unique<char16_t[]>(len + 1);
+                for (u32 j = 0; j <= len; j++) titleEntries[i].title[j] = title[j];
             }
         }
 

@@ -20,7 +20,7 @@ public:
 
     void ShowThemeSettings()
     {
-        _romBrowserController->ShowThemeSettings();
+        _romBrowserController->GotoSettingsScreen();
     }
 
     constexpr RomBrowserLayout GetRomBrowserLayout() const

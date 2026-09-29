@@ -6,22 +6,15 @@ This repository contains Pico Launcher, which is a front-end for [Pico Loader](h
 ![Coverflow display mode](docs/images/Coverflow.png)
 
 ## Features
-- **Core Loading**: Load homebrew and retail games using [Pico Loader](https://github.com/LNH-team/pico-loader).
-- **Multi-language**: Built-in support for English and Spanish.
-- **Language Selector**: Easily switch between available languages in settings.
-- **Theme Selector**: Change the look and feel with a dedicated theme menu.
-- **Display Modes**:
-    - Horizontal icon grid
-    - Vertical icon grid
-    - Banner list
-    - Coverflow
-    - Inverted Coverflow
-- **Game Sorting**: Sort your library by Name, Date, or Title.
-- **File Associations**: Support for various file types (see [File associations](docs/FileAssociations.md)).
-- **Covers**: Support for custom game covers (see [Covers](docs/Covers.md)).
-- **Theming**: Support for [Material Design 3 and custom themes](docs/Themes.md).
-- **Background Music**: Support for audio in themes (see [Themes](docs/Themes.md)).
-- **Cheats**: Comprehensive cheat support (see [Cheats](docs/Cheats.md)).
+- Load homebrew and retail games using [Pico Loader](https://github.com/LNH-team/pico-loader).
+- English and Spanish translations, selectable in Display Settings.
+- Horizontal and vertical icon grids, banner list, Coverflow, and inverted Coverflow.
+- Sort by name or internal game title; use the alphabetical quick-navigation bar.
+- [File associations](docs/FileAssociations.md)
+- [Custom icons, banners, and covers](docs/Customization.md)
+- [Material Design 3 and custom themes](docs/Themes.md)
+- Background music from themes (see [Themes](docs/Themes.md)).
+- Cheat support (see [Cheats](docs/Cheats.md)).
 
 General usage documentation can be found here: [Usage](docs/Usage.md).
 

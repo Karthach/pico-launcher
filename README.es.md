@@ -16,9 +16,9 @@ Este repositorio contiene Pico Launcher, que es una interfaz para [Pico Loader](
     - Lista de banners
     - Coverflow
     - Coverflow invertido
-- **Clasificación de juegos**: Clasifica tu biblioteca por nombre, fecha o título.
+- **Clasificación de juegos**: Ordena por nombre o título interno y usa la barra alfabética para navegar.
 - **Asociaciones de archivos**: Soporte para varios tipos de archivos (ver [Asociaciones de archivos](docs/FileAssociations.md)).
-- **Portadas**: Soporte para portadas de juegos personalizadas (ver [Portadas (Covers)](docs/Covers.md)).
+- **Personalización**: Usa iconos, banners y portadas personalizados (ver [Personalización](docs/Customization.md)).
 - **Temas**: Soporte para [Material Design 3 y temas personalizados](docs/Themes.md).
 - **Música de fondo**: Soporte para audio en los temas (ver [Temas](docs/Themes.md)).
 - **Trucos**: Soporte completo para trucos (cheats) (ver [Trucos](docs/Cheats.md)).

@@ -44,6 +44,7 @@ private:
     ILocalizationService& _localizationService;
 
     SharedPtr<Label2DView> _titleLabel;
+    SharedPtr<IconButton2DView> _themeButton;
     SharedPtr<Label2DView> _layoutLabel;
     SharedPtr<Label2DView> _layoutNameLabel;
     SharedPtr<Label2DView> _sortingLabel;
