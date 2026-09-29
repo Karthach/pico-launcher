@@ -14,7 +14,7 @@
 #include "musicIcon.h"
 #include "moviesIcon.h"
 #include "unknownIcon.h"
-#include "coverflowIcon.h"
+#include "themeIcon.h"
 #include "../IRomBrowserController.h"
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
@@ -24,6 +24,8 @@
 
 #define TITLE_LABEL_X       20
 #define TITLE_LABEL_Y       8
+#define THEME_BUTTON_X      212
+#define THEME_BUTTON_Y      (TITLE_LABEL_Y - 7)
 
 #define LAYOUT_LABEL_X      20
 #define LAYOUT_LABEL_Y      34
@@ -50,9 +52,7 @@ static RomBrowserLayout sRomBrowserDisplayModes[] =
 {
     RomBrowserLayout::HorizontalIconGrid,
     RomBrowserLayout::VerticalIconGrid,
-    RomBrowserLayout::BannerList,
-    RomBrowserLayout::CoverFlow,
-    RomBrowserLayout::InvertedCoverFlow
+    RomBrowserLayout::BannerList
 };
 
 static RomBrowserSortMode sRomBrowserSortModes[3] =
@@ -68,6 +68,7 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     : _viewModel(viewModel)
     , _localizationService(localizationService)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
+    , _themeButton(IconButton2DView::CreateShared(IconButtonView::Type::Standard, IconButtonView::State::NoToggle, md::sys::color::inverseOnSurface, materialColorScheme))
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
@@ -81,6 +82,11 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
 {
     _titleLabel->SetText(_localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
+    _themeButton->SetAction([] (IconButtonView*, void* arg)
+    {
+        ((DisplaySettingsBottomSheetView*)arg)->_viewModel->GotoSettingsScreen();
+    }, this);
+    AddChildTail(_themeButton.GetPointer());
     _layoutLabel->SetText(_localizationService.GetString("display_settings_layout"));
     AddChildTail(_layoutLabel.GetPointer());
     AddChildTail(_layoutNameLabel.GetPointer());
@@ -127,7 +133,6 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLayoutOptionIc
             if (self->_layoutOptions[i].GetPointer() == sender)
             {
                 self->_viewModel->SetRomBrowserDisplayMode(sRomBrowserDisplayModes[i]);
-                self->_isManualScroll = false; // Center on click
                 break;
             }
         }
@@ -175,12 +180,12 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (objVramManager)
     {
+        _themeButton->SetIconVramOffset(LoadIcon(*objVramManager, themeIconTiles, themeIconTilesLen));
+
         // layout options
         _layoutOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, hGridIconTiles, hGridIconTilesLen));
         _layoutOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, vGridIconTiles, vGridIconTilesLen));
         _layoutOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, bannerListIconTiles, bannerListIconTilesLen));
-        _layoutOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, coverflowIconTiles, coverflowIconTilesLen));
-        _layoutOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, coverflowIconTiles, coverflowIconTilesLen));
 
         // sort options
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
@@ -204,6 +209,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
 void DisplaySettingsBottomSheetView::UpdateLabels()
 {
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
+    _themeButton->SetPosition(THEME_BUTTON_X, _position.y + THEME_BUTTON_Y);
     _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
     _layoutNameLabel->SetPosition(LAYOUT_NAME_X, _position.y + LAYOUT_NAME_Y);
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
@@ -220,9 +226,7 @@ void DisplaySettingsBottomSheetView::Update()
     const char* layoutKeys[] = {
         "layout_horizontal_icon_grid",
         "layout_vertical_icon_grid",
-        "layout_banner_list",
-        "layout_cover_flow",
-        "layout_inverted_cover_flow"
+        "layout_banner_list"
     };
 
     int layoutIdx = 0;
@@ -253,23 +257,11 @@ void DisplaySettingsBottomSheetView::Update()
     }
     _sortingNameLabel->SetText(_localizationService.GetString(sortKeys[sortIdx]));
 
-    // Auto-scroll logic
-    if (!_isManualScroll)
-    {
-        int targetX = -(layoutIdx * 32);
-        int maxX = 0;
-        int minX = LAYOUT_CONTAINER_WIDTH - ((int)_layoutOptions.size() * 32);
-        if (targetX > maxX) targetX = maxX;
-        if (targetX < minX) targetX = minX;
-        
-        _layoutScrollX = targetX; 
-    }
-
     int x = 0;
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(LAYOUT_CONTAINER_X + _layoutScrollX + x, _position.y + LAYOUT_OPTIONS_Y);
+        layoutOption->SetPosition(LAYOUT_CONTAINER_X + x, _position.y + LAYOUT_OPTIONS_Y);
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -366,6 +358,11 @@ bool DisplaySettingsBottomSheetView::HandleInput(
     if (inputProvider.Triggered(InputKey::A))
     {
         auto currentFocus = focusManager.GetCurrentFocus();
+        if (currentFocus.GetPointer() == _themeButton.GetPointer())
+        {
+            _themeButton->HandleInput(inputProvider, focusManager);
+            return true;
+        }
         for (auto& layoutOption : _layoutOptions)
         {
             if (currentFocus.GetPointer() == layoutOption.GetPointer())
@@ -392,13 +389,6 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
     BottomSheetView::HandlePenDown(touchPoint, focusManager);
     
     Rectangle layoutRect(LAYOUT_CONTAINER_X, _position.y + LAYOUT_OPTIONS_Y, LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
-    if (layoutRect.Contains(touchPoint))
-    {
-        _isDraggingLayout = true;
-        _isManualScroll = true;
-        _lastTouchPoint = touchPoint;
-    }
-
     for (auto& layoutOption : _layoutOptions)
     {
         // Adjust touch check for clipped area
@@ -423,22 +413,11 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
 void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenMove(touchPoint, focusManager);
-    if (_isDraggingLayout)
-    {
-        int dx = touchPoint.x - _lastTouchPoint.x;
-        _layoutScrollX += dx;
-        int maxX = 0;
-        int minX = LAYOUT_CONTAINER_WIDTH - ((int)_layoutOptions.size() * 32);
-        if (_layoutScrollX > maxX) _layoutScrollX = maxX;
-        if (_layoutScrollX < minX) _layoutScrollX = minX;
-        _lastTouchPoint = touchPoint;
-    }
 }
 
 void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
-    _isDraggingLayout = false;
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->HandlePenUp(lastTouchPoint, focusManager);
@@ -448,6 +427,11 @@ void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, Fo
 SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>& currentFocus,
     FocusMoveDirection direction, View* source)
 {
+    if (currentFocus.GetPointer() == _themeButton.GetPointer())
+    {
+        return direction == FocusMoveDirection::Down ? _layoutOptions[0] : nullptr;
+    }
+
     int idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
@@ -455,19 +439,17 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
         {
             if (direction == FocusMoveDirection::Left)
             {
-                _isManualScroll = false;
                 if (--idx < 0) idx = 0;
                 return _layoutOptions[idx];
             }
             else if (direction == FocusMoveDirection::Right)
             {
-                _isManualScroll = false;
                 if (++idx >= (int)_layoutOptions.size()) idx = _layoutOptions.size() - 1;
                 return _layoutOptions[idx];
             }
             else if (direction == FocusMoveDirection::Up)
             {
-                return nullptr;
+                return _themeButton;
             }
             else if (direction == FocusMoveDirection::Down)
             {
@@ -495,7 +477,6 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
             }
             else if (direction == FocusMoveDirection::Up)
             {
-                _isManualScroll = false;
                 auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
                 for (u32 i = 0; i < (u32)_layoutOptions.size(); i++)
                 {
@@ -544,6 +525,7 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     const IconButton2DView::VramToken& iconButtonVramToken,
     const ChipView::VramToken& chipViewVramToken)
 {
+    _themeButton->SetGraphics(iconButtonVramToken);
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->SetGraphics(iconButtonVramToken);

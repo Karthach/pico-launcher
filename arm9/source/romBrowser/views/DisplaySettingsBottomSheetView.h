@@ -41,20 +41,16 @@ private:
     ILocalizationService& _localizationService;
 
     SharedPtr<Label2DView> _titleLabel;
+    SharedPtr<IconButton2DView> _themeButton;
     SharedPtr<Label2DView> _layoutLabel;
     SharedPtr<Label2DView> _layoutNameLabel;
     SharedPtr<Label2DView> _sortingLabel;
     SharedPtr<Label2DView> _sortingNameLabel;
     SharedPtr<Label2DView> _languageLabel;
 
-    std::array<SharedPtr<IconButton2DView>, 5> _layoutOptions;
+    std::array<SharedPtr<IconButton2DView>, 3> _layoutOptions;
     std::array<SharedPtr<IconButton2DView>, 3> _sortOptions;
     std::array<SharedPtr<ChipView>, 2> _languageOptions;
-
-    int _layoutScrollX = 0;
-    bool _isDraggingLayout = false;
-    bool _isManualScroll = false;
-    Point _lastTouchPoint;
 
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;
