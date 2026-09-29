@@ -74,16 +74,16 @@ public:
     void LoadResources(const ITheme& theme, const VramContext& mainVramContext);
 
 private:
-    u32 _gridCellTexVramOffset;
-    u32 _gridCellPlttVramOffset;
-    u32 _gridCellSelectedTexVramOffset;
-    u32 _gridCellSelectedPlttVramOffset;
-    u32 _bannerListCellTexVramOffset;
-    u32 _bannerListCellPlttVramOffset;
-    u32 _bannerListCellSelectedTexVramOffset;
-    u32 _bannerListCellSelectedPlttVramOffset;
-    u32 _scrimTexVramOffset;
-    u32 _scrimPlttVramOffset;
+    u32 _gridCellTexVramOffset = 0;
+    u32 _gridCellPlttVramOffset = 0;
+    u32 _gridCellSelectedTexVramOffset = 0;
+    u32 _gridCellSelectedPlttVramOffset = 0;
+    u32 _bannerListCellTexVramOffset = 0;
+    u32 _bannerListCellPlttVramOffset = 0;
+    u32 _bannerListCellSelectedTexVramOffset = 0;
+    u32 _bannerListCellSelectedPlttVramOffset = 0;
+    u32 _scrimTexVramOffset = 0;
+    u32 _scrimPlttVramOffset = 0;
     const CustomThemeInfo* _customThemeInfo;
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;

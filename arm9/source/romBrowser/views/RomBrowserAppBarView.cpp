@@ -4,7 +4,7 @@
 #include "gui/VramContext.h"
 #include "backIcon.h"
 #include "settingsIcon.h"
-#include "picturesIcon.h"
+#include "themeIcon.h"
 #include "heartIcon.h"
 #include "recentIcon.h"
 #include "hGridIcon.h"
@@ -50,8 +50,8 @@ void RomBrowserAppBarView::InitVram(const VramContext& vramContext)
         dma_ntrCopy32(3, backIconTiles, objVramManager->GetVramAddress(backIconVramOffset), backIconTilesLen);
         _appBarView->SetButtonIcon(APP_BAR_BUTTON_BACK, backIconVramOffset);
 
-        u32 themeIconVramOffset = objVramManager->Alloc(picturesIconTilesLen);
-        dma_ntrCopy32(3, picturesIconTiles, objVramManager->GetVramAddress(themeIconVramOffset), picturesIconTilesLen);
+        u32 themeIconVramOffset = objVramManager->Alloc(themeIconTilesLen);
+        dma_ntrCopy32(3, themeIconTiles, objVramManager->GetVramAddress(themeIconVramOffset), themeIconTilesLen);
         _appBarView->SetButtonIcon(APP_BAR_BUTTON_THEME_SETTINGS, themeIconVramOffset);
 
         u32 settingsIconVramOffset = objVramManager->Alloc(settingsIconTilesLen);

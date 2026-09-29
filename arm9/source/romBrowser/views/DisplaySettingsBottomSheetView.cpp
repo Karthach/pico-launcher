@@ -15,8 +15,6 @@
 #include "moviesIcon.h"
 #include "unknownIcon.h"
 #include "coverflowIcon.h"
-#include "themeIcon.h"
-#include "upIcon.h"
 #include "../IRomBrowserController.h"
 #include "gui/input/InputProvider.h"
 #include "themes/material/MaterialColorScheme.h"
@@ -25,25 +23,28 @@
 #include "DisplaySettingsBottomSheetView.h"
 
 #define TITLE_LABEL_X       20
-#define TITLE_LABEL_Y       16
-#define THEME_BUTTON_X      212
-#define THEME_BUTTON_Y      (TITLE_LABEL_Y - 7)
+#define TITLE_LABEL_Y       8
 
 #define LAYOUT_LABEL_X      20
-#define LAYOUT_LABEL_Y      38
+#define LAYOUT_LABEL_Y      34
 
 #define LAYOUT_NAME_X       20
-#define LAYOUT_NAME_Y       52
+#define LAYOUT_NAME_Y       65
 
 #define LAYOUT_CONTAINER_X      120
 #define LAYOUT_CONTAINER_WIDTH  110
 #define LAYOUT_CONTAINER_HEIGHT 32
+#define LAYOUT_OPTIONS_Y        31
 
 #define SORTING_LABEL_X     20
-#define SORTING_LABEL_Y     82
+#define SORTING_LABEL_Y     83
+#define SORTING_NAME_X      20
+#define SORTING_NAME_Y      116
+#define SORTING_OPTIONS_Y   82
 
 #define LANGUAGE_LABEL_X     20
-#define LANGUAGE_LABEL_Y     120
+#define LANGUAGE_LABEL_Y     135
+#define LANGUAGE_OPTIONS_Y   132
 
 static RomBrowserLayout sRomBrowserDisplayModes[] =
 {
@@ -67,10 +68,10 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     : _viewModel(viewModel)
     , _localizationService(localizationService)
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
-    , _themeButton(IconButton2DView::CreateShared(IconButtonView::Type::Standard, IconButtonView::State::NoToggle, md::sys::color::inverseOnSurface, materialColorScheme))
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
+    , _sortingNameLabel(Label2DView::CreateShared(96, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _layoutScrollX(0)
     , _isDraggingLayout(false)
@@ -80,16 +81,12 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
 {
     _titleLabel->SetText(_localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
-    _themeButton->SetAction([] (IconButtonView*, void* arg)
-    {
-        ((DisplaySettingsBottomSheetView*)arg)->_viewModel->GotoSettingsScreen();
-    }, this);
-    AddChildTail(_themeButton.GetPointer());
     _layoutLabel->SetText(_localizationService.GetString("display_settings_layout"));
     AddChildTail(_layoutLabel.GetPointer());
     AddChildTail(_layoutNameLabel.GetPointer());
     _sortingLabel->SetText(_localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
+    AddChildTail(_sortingNameLabel.GetPointer());
     _languageLabel->SetText(_localizationService.GetString("language_settings_title"));
     AddChildTail(_languageLabel.GetPointer());
 
@@ -178,14 +175,12 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (objVramManager)
     {
-        _themeButton->SetIconVramOffset(LoadIcon(*objVramManager, themeIconTiles, themeIconTilesLen));
-
         // layout options
         _layoutOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, hGridIconTiles, hGridIconTilesLen));
         _layoutOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, vGridIconTiles, vGridIconTilesLen));
         _layoutOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, bannerListIconTiles, bannerListIconTilesLen));
         _layoutOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, coverflowIconTiles, coverflowIconTilesLen));
-        _layoutOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, upIconTiles, upIconTilesLen)); // Using upIcon as placeholder
+        _layoutOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, coverflowIconTiles, coverflowIconTilesLen));
 
         // sort options
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
@@ -212,13 +207,13 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
     _layoutLabel->SetPosition(LAYOUT_LABEL_X, _position.y + LAYOUT_LABEL_Y);
     _layoutNameLabel->SetPosition(LAYOUT_NAME_X, _position.y + LAYOUT_NAME_Y);
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
+    _sortingNameLabel->SetPosition(SORTING_NAME_X, _position.y + SORTING_NAME_Y);
     _languageLabel->SetPosition(LANGUAGE_LABEL_X, _position.y + LANGUAGE_LABEL_Y);
 }
 
 void DisplaySettingsBottomSheetView::Update()
 {
     BottomSheetView::Update();
-    _themeButton->SetPosition(THEME_BUTTON_X, _position.y + THEME_BUTTON_Y);
     UpdateLabels();
     auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
 
@@ -242,6 +237,22 @@ void DisplaySettingsBottomSheetView::Update()
     
     _layoutNameLabel->SetText(_localizationService.GetString(layoutKeys[layoutIdx]));
 
+    const char* sortKeys[] = {
+        "sort_name_ascending",
+        "sort_name_descending",
+        "sort_title_ascending"
+    };
+    int sortIdx = 0;
+    for (u32 i = 0; i < (u32)_sortOptions.size(); i++)
+    {
+        if (sRomBrowserSortModes[i] == _viewModel->GetRomBrowserSortMode())
+        {
+            sortIdx = i;
+            break;
+        }
+    }
+    _sortingNameLabel->SetText(_localizationService.GetString(sortKeys[sortIdx]));
+
     // Auto-scroll logic
     if (!_isManualScroll)
     {
@@ -258,7 +269,7 @@ void DisplaySettingsBottomSheetView::Update()
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->SetPosition(LAYOUT_CONTAINER_X + _layoutScrollX + x, _position.y + (LAYOUT_LABEL_Y - 3));
+        layoutOption->SetPosition(LAYOUT_CONTAINER_X + _layoutScrollX + x, _position.y + LAYOUT_OPTIONS_Y);
         layoutOption->SetState(sRomBrowserDisplayModes[idx] == selectedDisplayMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -272,7 +283,7 @@ void DisplaySettingsBottomSheetView::Update()
     idx = 0;
     for (auto& sortOption : _sortOptions)
     {
-        sortOption->SetPosition(x, _position.y + (SORTING_LABEL_Y - 8));
+        sortOption->SetPosition(x, _position.y + SORTING_OPTIONS_Y);
         sortOption->SetState(sRomBrowserSortModes[idx] == selectedSortMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
@@ -286,7 +297,7 @@ void DisplaySettingsBottomSheetView::Update()
     const char* languages[] = { "english", "spanish" };
     for (auto& langOption : _languageOptions)
     {
-        langOption->SetPosition(x, _position.y + (LANGUAGE_LABEL_Y - 3));
+        langOption->SetPosition(x, _position.y + LANGUAGE_OPTIONS_Y);
         langOption->SetSelected(strcmp(languages[idx], currentLang) == 0);
         x += langOption->GetWidth() + 8;
         idx++;
@@ -306,13 +317,15 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _layoutNameLabel->SetForegroundColor(_materialColorScheme->primary);
         _sortingLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _sortingLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+        _sortingNameLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _sortingNameLabel->SetForegroundColor(_materialColorScheme->primary);
         _languageLabel->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
         _languageLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         
         BottomSheetView::Draw(graphicsContext);
 
         // Clip layout options
-        Rectangle layoutClip(LAYOUT_CONTAINER_X, _position.y + (LAYOUT_LABEL_Y - 8), LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
+        Rectangle layoutClip(LAYOUT_CONTAINER_X, _position.y + LAYOUT_OPTIONS_Y, LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
         graphicsContext.SetClipArea(layoutClip);
         for (auto& layoutOption : _layoutOptions)
         {
@@ -378,7 +391,7 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
 {
     BottomSheetView::HandlePenDown(touchPoint, focusManager);
     
-    Rectangle layoutRect(LAYOUT_CONTAINER_X, _position.y + (LAYOUT_LABEL_Y - 8), LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
+    Rectangle layoutRect(LAYOUT_CONTAINER_X, _position.y + LAYOUT_OPTIONS_Y, LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
     if (layoutRect.Contains(touchPoint))
     {
         _isDraggingLayout = true;
@@ -435,13 +448,6 @@ void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, Fo
 SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>& currentFocus,
     FocusMoveDirection direction, View* source)
 {
-    if (currentFocus.GetPointer() == _themeButton.GetPointer())
-    {
-        if (direction == FocusMoveDirection::Down)
-            return _layoutOptions[0];
-        return nullptr;
-    }
-
     int idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
@@ -461,7 +467,7 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
             }
             else if (direction == FocusMoveDirection::Up)
             {
-                return _themeButton;
+                return nullptr;
             }
             else if (direction == FocusMoveDirection::Down)
             {
@@ -538,7 +544,6 @@ void DisplaySettingsBottomSheetView::SetGraphics(
     const IconButton2DView::VramToken& iconButtonVramToken,
     const ChipView::VramToken& chipViewVramToken)
 {
-    _themeButton->SetGraphics(iconButtonVramToken);
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->SetGraphics(iconButtonVramToken);
@@ -556,6 +561,20 @@ void DisplaySettingsBottomSheetView::SetGraphics(
 void DisplaySettingsBottomSheetView::Close()
 {
     _viewModel->Close();
+}
+
+void DisplaySettingsBottomSheetView::Focus(FocusManager& focusManager)
+{
+    auto selectedDisplayMode = _viewModel->GetRomBrowserDisplayMode();
+    for (u32 i = 0; i < (u32)_layoutOptions.size(); i++)
+    {
+        if (sRomBrowserDisplayModes[i] == selectedDisplayMode)
+        {
+            focusManager.Focus(_layoutOptions[i]);
+            return;
+        }
+    }
+    focusManager.Focus(_layoutOptions[0]);
 }
 
 u32 DisplaySettingsBottomSheetView::LoadIcon(IVramManager& vramManager,

@@ -12,6 +12,7 @@
 #include "CustomTheme.h"
 
 #define JSON_RESERVED_SIZE  4096
+#define MAX_THEME_JSON_SIZE 8192
 
 #define KEY_COLOR_R     "r"
 #define KEY_COLOR_G     "g"
@@ -67,9 +68,9 @@ static Rgb8 parseColor(const JsonObjectConst& json, const Rgb8& defaultColor)
     }
 
     return Rgb8(
-        json[KEY_COLOR_R] | 0,
-        json[KEY_COLOR_G] | 0,
-        json[KEY_COLOR_B] | 0
+        json[KEY_COLOR_R] | defaultColor.r,
+        json[KEY_COLOR_G] | defaultColor.g,
+        json[KEY_COLOR_B] | defaultColor.b
     );
 }
 
@@ -81,8 +82,8 @@ static Point parsePoint(const JsonObjectConst& json, const Point& defaultPoint)
     }
 
     return Point(
-        json[KEY_POINT_X] | 0,
-        json[KEY_POINT_Y] | 0
+        json[KEY_POINT_X] | defaultPoint.x,
+        json[KEY_POINT_Y] | defaultPoint.y
     );
 }
 
@@ -188,17 +189,20 @@ CustomTheme::CustomTheme(const TCHAR* folderName, const Rgb<8, 8, 8>& primaryCol
 void CustomTheme::LoadRomBrowserResources(const VramContext& mainVramContext, const VramContext& subVramContext)
 {
     const auto file = std::make_unique<File>();
-    OpenThemeFile(*file, "theme.json");
+    if (!OpenThemeFile(*file, "theme.json"))
+    {
+        LOG_ERROR("Custom theme '%s' has no readable theme.json.\n", _folderName.GetString());
+        return;
+    }
 
     u32 fileSize = file->GetSize();
-    if (fileSize == 0)
+    if (fileSize == 0 || fileSize > MAX_THEME_JSON_SIZE)
         return;
 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
     u8* fileDataPtr = fileData.get();
 
-    u32 bytesRead = 0;
-    if (file->Read(fileDataPtr, fileSize, bytesRead) != FR_OK)
+    if (!file->ReadExact(fileDataPtr, fileSize))
         return;
 
     DynamicJsonDocument json(JSON_RESERVED_SIZE);

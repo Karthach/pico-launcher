@@ -9,6 +9,7 @@
 #pragma GCC optimize("Os")
 
 #define JSON_RESERVED_SIZE  2048
+#define MAX_LOCALIZATION_JSON_SIZE 8192
 
 JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSettingsService)
 {
@@ -30,7 +31,7 @@ JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSetting
 
     u32 fileSize = file->GetSize();
     LOG_DEBUG("Lang file size: %d\n", fileSize);
-    if (fileSize == 0)
+    if (fileSize == 0 || fileSize > MAX_LOCALIZATION_JSON_SIZE)
         return;
 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
@@ -41,8 +42,7 @@ JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSetting
     }
     u8* fileDataPtr = fileData.get();
 
-    u32 bytesRead = 0;
-    if (file->Read(fileDataPtr, fileSize, bytesRead) != FR_OK)
+    if (!file->ReadExact(fileDataPtr, fileSize))
     {
         LOG_ERROR("Read lang file fail\n");
         return;

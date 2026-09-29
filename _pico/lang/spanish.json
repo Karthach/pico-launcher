@@ -12,5 +12,8 @@
   "layout_vertical_icon_grid": "Iconos Verticales",
   "layout_banner_list": "Lista de Banners",
   "layout_cover_flow": "Carrusel",
-  "layout_inverted_cover_flow": "Carrusel Invertido"
+  "layout_inverted_cover_flow": "Carrusel Invertido",
+  "sort_name_ascending": "Nombre: A a Z",
+  "sort_name_descending": "Nombre: Z a A",
+  "sort_title_ascending": "Título: A a Z"
 }

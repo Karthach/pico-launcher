@@ -11,6 +11,9 @@ ThemeInfoManager::ThemeInfoManager(const ThemeRepository& themeRepository)
 
 void ThemeInfoManager::LoadThemeInfo(int index)
 {
+    if (index < 0 || (u32)index >= _themeRepository.GetThemeCount())
+        return;
+
     auto extraThemeInfo = SharedPtr<ExtraThemeInfo>::MakeShared();
     extraThemeInfo->themeInfo = _themeRepository.LoadThemeInfo(index);
     if (extraThemeInfo->themeInfo)
@@ -23,6 +26,8 @@ void ThemeInfoManager::LoadThemeInfo(int index)
 
 void ThemeInfoManager::ReleaseThemeInfo(int index)
 {
+    if (index < 0 || (u32)index >= _themeRepository.GetThemeCount())
+        return;
     _extraThemeInfo[index].Reset();
 }
 

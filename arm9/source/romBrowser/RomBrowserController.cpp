@@ -1,5 +1,7 @@
 #include "common.h"
 #include <array>
+#include "App.h"
+#include "services/process/ProcessManager.h"
 #include "picoLoaderBootstrap.h"
 #include "PicoLoaderProcess.h"
 #include "settings/SettingsProcess.h"
@@ -64,6 +66,17 @@ void RomBrowserController::HideDisplaySettings()
 void RomBrowserController::GotoSettingsScreen()
 {
     _stateMachine.Fire(RomBrowserStateTrigger::GotoSettingsScreen);
+}
+
+void RomBrowserController::RestartForLanguageChange()
+{
+    TCHAR currentPath[256];
+    if (f_getcwd(currentPath, sizeof(currentPath) / sizeof(currentPath[0])) == FR_OK)
+    {
+        _appSettingsService->GetAppSettings().lastUsedFilePath = currentPath;
+        _appSettingsService->Save();
+    }
+    gProcessManager.Goto<App>();
 }
 
 void RomBrowserController::SetRomBrowserDisplaySettings(

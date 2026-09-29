@@ -19,6 +19,8 @@ public:
 
     SharedPtr<ExtraThemeInfo> GetExtraThemeInfo(int index) const
     {
+        if (index < 0 || (u32)index >= _themeRepository.GetThemeCount())
+            return nullptr;
         return _extraThemeInfo[index].Lock();
     }
 

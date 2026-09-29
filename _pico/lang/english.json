@@ -12,5 +12,8 @@
   "layout_vertical_icon_grid": "Vertical Icon Grid",
   "layout_banner_list": "Banner List",
   "layout_cover_flow": "Cover Flow",
-  "layout_inverted_cover_flow": "Inverted Cover Flow"
+  "layout_inverted_cover_flow": "Inverted Cover Flow",
+  "sort_name_ascending": "Name: A to Z",
+  "sort_name_descending": "Name: Z to A",
+  "sort_title_ascending": "Game title: A to Z"
 }
