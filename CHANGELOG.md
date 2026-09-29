@@ -1,30 +1,30 @@
 # Changelog
 
-## [Unreleased]
+## [v1.3.1] - 29 Sep 2026
 
-### Added
-- Support for custom BMP icons for games and folders - by @tasken
-- Support for custom NDS banners (custom titles, subtitles and animated icons) for games and folders - by @tasken
-- Theme selector
-- Support for custom folder covers via a cover.bmp file placed inside the folder - by @tasken
+### English
 
-### Fixed
-- Top screen cover is now displayed/hidden correctly when placed partially or fully off-screen
-- DSi banners with missing DSi part now fall back to the DS icon
-- Game-code cover lookup no longer searches on a stale buffer when a file has no game code
+#### Added
+- Added English and Spanish interface translations with a language selector in Display Settings.
+- Added sorting by internal game title, alphabetical quick navigation, a scrollable layout selector, and inverted Coverflow mode.
+- Added a theme selector, custom BMP icons for games and folders, custom NDS banners, and custom folder covers using `cover.bmp`.
 
-## [Fork additions] - May 2026
+#### Fixed
+- Kept cover artwork within the visible screen area and used the DS icon when a DSi banner has no DSi section.
+- Fixed stale game-code data affecting cover lookup when a ROM has no game code.
+- Improved translated settings navigation, focus retention after alphabetical jumps, and Coverflow layout labels.
 
-### Added
-- English and Spanish translations and a language selector in Display Settings
-- Sorting by internal game title
-- Alphabetical quick navigation and a scrollable layout selector
-- Inverted Coverflow mode
+### Español
 
-### Fixed
-- Translation memory use and settings-sheet navigation
-- Selection focus after jumping to a game
-- CoverFlow layout name display
+#### Añadido
+- Interfaz traducida al inglés y al español, con selector de idioma en los ajustes de pantalla.
+- Ordenación por título interno, navegación alfabética rápida, selector de diseño desplazable y modo Coverflow invertido.
+- Selector de temas, iconos BMP personalizados para juegos y carpetas, banners NDS personalizados y portadas de carpeta mediante `cover.bmp`.
+
+#### Corregido
+- Las portadas se mantienen dentro de la pantalla y se usa el icono de DS cuando un banner DSi no incluye su sección DSi.
+- Corregida la búsqueda de portadas cuando una ROM no tiene código de juego, evitando reutilizar datos anteriores.
+- Mejoradas la navegación de los ajustes traducidos, la conservación del foco al saltar por letras y las etiquetas del diseño Coverflow.
 
 ## [v1.3.0] - 18 Apr 2026
 
