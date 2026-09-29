@@ -6,4 +6,5 @@ public:
     virtual ~ILocalizationService() = default;
 
     virtual const char16_t* GetString(const char* key) const = 0;
+    virtual void Reload() = 0;
 };

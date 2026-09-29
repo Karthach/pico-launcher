@@ -8,6 +8,7 @@
 #include "settings/views/SettingsAppBarView.h"
 
 class IFontRepository;
+class ILocalizationService;
 class ISettingsController;
 class MaterialColorScheme;
 
@@ -18,7 +19,8 @@ class ThemeListBottomView : public ViewContainer
 public:
     ThemeListBottomView(SharedPtr<ThemeListViewModel> viewModel, const MaterialColorScheme* materialColorScheme,
         const IRomBrowserViewFactory* romBrowserViewFactory, const IThemeFileIconFactory* themeFileIconFactory,
-        VBlankTextureLoader* vblankTextureLoader, const IFontRepository* fontRepository);
+        VBlankTextureLoader* vblankTextureLoader, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 
     void InitVram(const VramContext& vramContext) override;
     void Update() override;

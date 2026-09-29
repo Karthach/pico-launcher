@@ -5,6 +5,7 @@
 #include "settings/viewModels/ThemeListViewModel.h"
 
 class IFontRepository;
+class ILocalizationService;
 class MaterialColorScheme;
 
 class ThemeListTopView : public ViewContainer
@@ -13,7 +14,7 @@ class ThemeListTopView : public ViewContainer
 
 public:
     ThemeListTopView(SharedPtr<ThemeListViewModel> viewModel, const MaterialColorScheme* materialColorScheme,
-        const IFontRepository* fontRepository);
+        const IFontRepository* fontRepository, ILocalizationService& localizationService);
 
     void VBlank() override;
 
@@ -24,6 +25,8 @@ public:
 
 private:
     SharedPtr<ThemeListViewModel> _viewModel;
-    int _lastSelectedItem = -1;
+    ILocalizationService& _localizationService;
+    int _lastSelectedItem = -2;
+    bool _selectionResolved = false;
     SharedPtr<Label2DView> _noPreviewLabel;
 };

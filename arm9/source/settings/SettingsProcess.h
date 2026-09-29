@@ -20,6 +20,7 @@
 #include "settings/views/ThemeListBottomView.h"
 #include "themes/ITheme.h"
 #include "services/process/IProcess.h"
+#include "services/localization/ILocalizationService.h"
 #include "services/settings/IAppSettingsService.h"
 
 class SettingsController;
@@ -27,7 +28,7 @@ class SettingsController;
 class alignas(32) SettingsProcess : public IProcess
 {
 public:
-    SettingsProcess(IAppSettingsService& appSettingsService);
+    SettingsProcess(IAppSettingsService& appSettingsService, ILocalizationService& localizationService);
 
     void Run() override;
     void Exit() override;
@@ -55,6 +56,7 @@ private:
     std::unique_ptr<IThemeBackground> _bottomBackground;
 
     IAppSettingsService& _appSettingsService;
+    ILocalizationService& _localizationService;
     volatile bool _exit = false;
 
     PadInputSource _keyInputSource;

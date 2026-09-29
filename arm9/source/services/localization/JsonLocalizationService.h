@@ -15,9 +15,12 @@ class JsonLocalizationService : public ILocalizationService
 
     StringEntry _strings[32];
     u32 _stringCount = 0;
+    IAppSettingsService& _appSettingsService;
+    String<char, 16> _loadedLanguage;
 
 public:
     explicit JsonLocalizationService(IAppSettingsService& appSettingsService);
 
     const char16_t* GetString(const char* key) const override;
+    void Reload() override;
 };
