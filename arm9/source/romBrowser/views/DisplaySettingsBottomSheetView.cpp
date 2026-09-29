@@ -43,6 +43,9 @@
 #define SORTING_NAME_X      20
 #define SORTING_NAME_Y      116
 #define SORTING_OPTIONS_Y   82
+#define SORTING_OPTIONS_X   120
+#define SORTING_OPTIONS_WIDTH 110
+#define SORTING_OPTIONS_HEIGHT 32
 
 #define LANGUAGE_LABEL_X     20
 #define LANGUAGE_LABEL_Y     135
@@ -55,12 +58,13 @@ static RomBrowserLayout sRomBrowserDisplayModes[] =
     RomBrowserLayout::BannerList
 };
 
-static RomBrowserSortMode sRomBrowserSortModes[4] =
+static RomBrowserSortMode sRomBrowserSortModes[5] =
 {
     [0] = RomBrowserSortMode::NameAscending,
     [1] = RomBrowserSortMode::NameDescending,
     [2] = RomBrowserSortMode::TitleAscending,
-    [3] = RomBrowserSortMode::TitleDescending
+    [3] = RomBrowserSortMode::TitleDescending,
+    [4] = RomBrowserSortMode::LastModified
 };
 
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
@@ -73,7 +77,7 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
-    , _sortingNameLabel(Label2DView::CreateShared(96, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
+    , _sortingNameLabel(Label2DView::CreateShared(200, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
@@ -97,13 +101,15 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     for (u32 i = 0; i < _layoutOptions.size(); i++)
     {
         _layoutOptions[i] = CreateLayoutOptionIconButton();
+        _layoutOptions[i]->SetParent(this);
         // Do NOT add to child list, we draw manually with clipping
     }
 
     for (auto& sortOption : _sortOptions)
     {
         sortOption = CreateSortOptionIconButton();
-        AddChildTail(sortOption.GetPointer());
+        sortOption->SetParent(this);
+        // Keep sort options outside the child list so drawing and touch input can be clipped to the scroll area.
     }
 
     const char16_t* languageNames[] = { u"English", u"Español" };
@@ -154,6 +160,7 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateSortOptionIcon
             if (self->_sortOptions[i].GetPointer() == sender)
             {
                 self->_viewModel->SetRomBrowserSortMode(sRomBrowserSortModes[i]);
+                self->_isManualSortScroll = false;
                 break;
             }
         }
@@ -190,6 +197,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _sortOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameDescendingIconTiles, sortNameDescendingIconTilesLen));
         _sortOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
         _sortOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
+        _sortOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, recentIconTiles, recentIconTilesLen));
     }
 
     _layoutNameLabel->InitVram(vramContext);
@@ -197,6 +205,11 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->InitVram(vramContext);
+    }
+
+    for (auto& sortOption : _sortOptions)
+    {
+        sortOption->InitVram(vramContext);
     }
 
     for (auto& langOption : _languageOptions)
@@ -214,6 +227,24 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
     _sortingLabel->SetPosition(SORTING_LABEL_X, _position.y + SORTING_LABEL_Y);
     _sortingNameLabel->SetPosition(SORTING_NAME_X, _position.y + SORTING_NAME_Y);
     _languageLabel->SetPosition(LANGUAGE_LABEL_X, _position.y + LANGUAGE_LABEL_Y);
+}
+
+void DisplaySettingsBottomSheetView::ClampSortScroll()
+{
+    const int minScrollX = SORTING_OPTIONS_WIDTH - (int)_sortOptions.size() * 32;
+    if (_sortScrollX > 0) _sortScrollX = 0;
+    if (_sortScrollX < minScrollX) _sortScrollX = minScrollX;
+}
+
+void DisplaySettingsBottomSheetView::EnsureSortOptionVisible(u32 index)
+{
+    const int optionX = 120 + _sortScrollX + (int)index * 32;
+    if (optionX < 120)
+        _sortScrollX += 120 - optionX;
+    else if (optionX + 32 > 120 + SORTING_OPTIONS_WIDTH)
+        _sortScrollX -= optionX + 32 - (120 + SORTING_OPTIONS_WIDTH);
+    ClampSortScroll();
+    _isManualSortScroll = true;
 }
 
 void DisplaySettingsBottomSheetView::Update()
@@ -244,7 +275,8 @@ void DisplaySettingsBottomSheetView::Update()
         "sort_name_ascending",
         "sort_name_descending",
         "sort_title_ascending",
-        "sort_title_descending"
+        "sort_title_descending",
+        "sort_last_modified"
     };
     int sortIdx = 0;
     for (u32 i = 0; i < (u32)_sortOptions.size(); i++)
@@ -256,6 +288,12 @@ void DisplaySettingsBottomSheetView::Update()
         }
     }
     _sortingNameLabel->SetText(_localizationService.GetString(sortKeys[sortIdx]));
+
+    if (!_isManualSortScroll)
+    {
+        _sortScrollX = -(sortIdx * 32);
+        ClampSortScroll();
+    }
 
     int x = 0;
     u32 idx = 0;
@@ -271,7 +309,7 @@ void DisplaySettingsBottomSheetView::Update()
     }
 
     auto selectedSortMode = _viewModel->GetRomBrowserSortMode();
-    x = 120;
+    x = SORTING_OPTIONS_X + _sortScrollX;
     idx = 0;
     for (auto& sortOption : _sortOptions)
     {
@@ -279,6 +317,7 @@ void DisplaySettingsBottomSheetView::Update()
         sortOption->SetState(sRomBrowserSortModes[idx] == selectedSortMode
             ? IconButtonView::State::ToggleSelected
             : IconButtonView::State::ToggleUnselected);
+        sortOption->Update();
         x += 32;
         idx++;
     }
@@ -325,6 +364,15 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         }
         graphicsContext.SetClipArea(GetBounds());
 
+        Rectangle sortClip(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
+            SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
+        graphicsContext.SetClipArea(sortClip);
+        for (auto& sortOption : _sortOptions)
+        {
+            sortOption->Draw(graphicsContext);
+        }
+        graphicsContext.SetClipArea(GetBounds());
+
         for (auto& langOption : _languageOptions)
         {
             langOption->Draw(graphicsContext);
@@ -340,6 +388,10 @@ void DisplaySettingsBottomSheetView::VBlank()
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->VBlank();
+    }
+    for (auto& sortOption : _sortOptions)
+    {
+        sortOption->VBlank();
     }
     for (auto& langOption : _languageOptions)
     {
@@ -398,6 +450,22 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
         }
     }
 
+    Rectangle sortRect(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
+        SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
+    if (sortRect.Contains(touchPoint))
+    {
+        _isDraggingSort = true;
+        _isManualSortScroll = true;
+        _lastSortTouchPoint = touchPoint;
+        for (auto& sortOption : _sortOptions)
+        {
+            if (sortOption->GetBounds().Contains(touchPoint))
+            {
+                sortOption->HandlePenDown(touchPoint, focusManager);
+            }
+        }
+    }
+
     const char* languages[] = { "english", "spanish" };
     for (u32 i = 0; i < _languageOptions.size(); i++)
     {
@@ -413,6 +481,16 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
 void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenMove(touchPoint, focusManager);
+    if (_isDraggingSort)
+    {
+        _sortScrollX += touchPoint.x - _lastSortTouchPoint.x;
+        ClampSortScroll();
+        _lastSortTouchPoint = touchPoint;
+        for (auto& sortOption : _sortOptions)
+        {
+            sortOption->HandlePenMove(touchPoint, focusManager);
+        }
+    }
 }
 
 void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
@@ -422,6 +500,11 @@ void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, Fo
     {
         layoutOption->HandlePenUp(lastTouchPoint, focusManager);
     }
+    for (auto& sortOption : _sortOptions)
+    {
+        sortOption->HandlePenUp(lastTouchPoint, focusManager);
+    }
+    _isDraggingSort = false;
 }
 
 SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>& currentFocus,
@@ -453,6 +536,16 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
             }
             else if (direction == FocusMoveDirection::Down)
             {
+                auto selectedSortMode = _viewModel->GetRomBrowserSortMode();
+                for (u32 i = 0; i < (u32)_sortOptions.size(); i++)
+                {
+                    if (sRomBrowserSortModes[i] == selectedSortMode)
+                    {
+                        EnsureSortOptionVisible(i);
+                        return _sortOptions[i];
+                    }
+                }
+                EnsureSortOptionVisible(0);
                 return _sortOptions[0];
             }
         }
@@ -465,14 +558,14 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
         {
             if (direction == FocusMoveDirection::Left)
             {
-                if (--idx < 0)
-                    idx += _sortOptions.size();
+                idx = idx == 0 ? (int)_sortOptions.size() - 1 : idx - 1;
+                EnsureSortOptionVisible((u32)idx);
                 return _sortOptions[idx];
             }
             else if (direction == FocusMoveDirection::Right)
             {
-                if (++idx >= (int)_sortOptions.size())
-                    idx = 0;
+                idx = idx + 1 >= (int)_sortOptions.size() ? 0 : idx + 1;
+                EnsureSortOptionVisible((u32)idx);
                 return _sortOptions[idx];
             }
             else if (direction == FocusMoveDirection::Up)

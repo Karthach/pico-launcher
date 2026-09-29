@@ -17,6 +17,7 @@
   "sort_name_descending": "File name: Z to A",
   "sort_title_ascending": "Game title: A to Z",
   "sort_title_descending": "Game title: Z to A",
+  "sort_last_modified": "Modified: newest first",
   "theme_list_empty": "No themes installed.",
   "theme_preview_select": "Select a theme to preview.",
   "theme_preview_unavailable": "Preview not available.",

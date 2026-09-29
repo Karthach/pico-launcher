@@ -123,16 +123,43 @@ std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
                         sortDirection = SdFolderSortDirection::Ascending;
                     }
                 }
+                int cmp = 0;
                 switch (sortType)
                 {
                     case SdFolderSortType::Name:
+                    {
+                        if (CompareName(a, b))
+                            cmp = -1;
+                        else if (CompareName(b, a))
+                            cmp = 1;
+                        break;
+                    }
+                    case SdFolderSortType::LastModified:
+                    {
+                        u32 aTimestamp = a->GetFastFileRef().GetLastModifiedTimestamp();
+                        u32 bTimestamp = b->GetFastFileRef().GetLastModifiedTimestamp();
+                        if (aTimestamp < bTimestamp)
+                            cmp = -1;
+                        else if (aTimestamp > bTimestamp)
+                            cmp = 1;
+                        else if (CompareName(a, b))
+                            cmp = -1;
+                        else if (CompareName(b, a))
+                            cmp = 1;
+                        break;
+                    }
                     default:
                     {
-                        result = CompareName(a, b);
+                        if (CompareName(a, b))
+                            cmp = -1;
+                        else if (CompareName(b, a))
+                            cmp = 1;
                         break;
                     }
                 }
-                return sortDirection == SdFolderSortDirection::Ascending ? result : !result;
+                return sortDirection == SdFolderSortDirection::Ascending
+                    ? cmp < 0
+                    : cmp > 0;
             });
     }
     resultCount = filteredCount;

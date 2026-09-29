@@ -49,8 +49,13 @@ private:
     SharedPtr<Label2DView> _languageLabel;
 
     std::array<SharedPtr<IconButton2DView>, 3> _layoutOptions;
-    std::array<SharedPtr<IconButton2DView>, 4> _sortOptions;
+    std::array<SharedPtr<IconButton2DView>, 5> _sortOptions;
     std::array<SharedPtr<ChipView>, 2> _languageOptions;
+
+    int _sortScrollX = 0;
+    bool _isDraggingSort = false;
+    bool _isManualSortScroll = false;
+    Point _lastSortTouchPoint;
 
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;
@@ -64,6 +69,8 @@ private:
         ILocalizationService& localizationService);
 
     void UpdateLabels();
+    void ClampSortScroll();
+    void EnsureSortOptionVisible(u32 index);
 
     u32 LoadIcon(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
 };
