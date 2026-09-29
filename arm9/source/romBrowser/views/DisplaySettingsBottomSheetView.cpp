@@ -31,7 +31,7 @@
 #define LAYOUT_LABEL_Y      34
 
 #define LAYOUT_NAME_X       20
-#define LAYOUT_NAME_Y       65
+#define LAYOUT_NAME_Y       51
 
 #define LAYOUT_CONTAINER_X      120
 #define LAYOUT_CONTAINER_WIDTH  110
@@ -39,10 +39,10 @@
 #define LAYOUT_OPTIONS_Y        31
 
 #define SORTING_LABEL_X     20
-#define SORTING_LABEL_Y     83
+#define SORTING_LABEL_Y     70
 #define SORTING_NAME_X      20
-#define SORTING_NAME_Y      116
-#define SORTING_OPTIONS_Y   82
+#define SORTING_NAME_Y      103
+#define SORTING_OPTIONS_Y   69
 #define SORTING_OPTIONS_X   120
 #define SORTING_OPTIONS_WIDTH 110
 #define SORTING_OPTIONS_HEIGHT 32
