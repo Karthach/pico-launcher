@@ -2,6 +2,7 @@
 #include "common.h"
 #include <memory>
 #include "services/settings/IAppSettingsService.h"
+#include "services/localization/ILocalizationService.h"
 #include "bgm/IBgmService.h"
 #include "services/process/IProcess.h"
 #include "gui/SimplePaletteManager.h"
@@ -21,19 +22,14 @@
 #include "themes/material/MaterialColorScheme.h"
 #include "romBrowser/viewModels/RomBrowserBottomScreenViewModel.h"
 #include "romBrowser/viewModels/DisplaySettingsViewModel.h"
-#include "romBrowser/viewModels/ThemeSettingsViewModel.h"
 #include "romBrowser/views/RomBrowserBottomScreenView.h"
-
 #include "romBrowser/views/RomBrowserTopScreenView.h"
-#include "romBrowser/views/ThemeSettingsBottomSheetView.h"
 #include "romBrowser/views/IconButton2DView.h"
-#include "romBrowser/Theme/Material/MaterialThemeFileIconFactory.h"
+#include "romBrowser/views/ChipView.h"
 #include "romBrowser/RomBrowserController.h"
 #include "DialogPresenter.h"
 #include "themes/ITheme.h"
 #include "animation/Animator.h"
-
-#include "services/localization/ILocalizationService.h"
 
 class alignas(32) App : public IProcess
 {
@@ -92,26 +88,19 @@ private:
     RomBrowserController _romBrowserController;
 
     DisplaySettingsViewModel _displaySettingsBottomSheetViewModel;
-    ThemeSettingsViewModel _themeSettingsBottomSheetViewModel;
 
     FocusManager _focusManager;
-
-    std::unique_ptr<MaterialThemeFileIconFactory> _materialThemeFileIconFactory;
 
     RomBrowserBottomScreenViewModel _romBrowserBottomScreenViewModel;
 
     DialogPresenter _dialogPresenter;
 
-    VramState _vramStateBeforeTheme;
     VramState _vramStateBeforeMakeBottomScreenView;
     VramState _vramStateAfterMakeBottomScreenView;
     bool _changeDisplayMode = false;
-    bool _changeTheme = false;
 
     ChipView::VramToken _chipViewVram;
     IconButton2DView::VramToken _iconButtonViewVram;
-
-    String<char, 64> _currentThemeName;
 
     bool _vcountIrqStarted = false;
 
@@ -127,13 +116,9 @@ private:
     void HandleHideGameInfoTrigger();
     void HandleShowDisplaySettingsTrigger();
     void HandleHideDisplaySettingsTrigger();
-    void HandleShowThemeSettingsTrigger();
-    void HandleHideThemeSettingsTrigger();
     void HandleNavigateTrigger();
     void HandleFolderLoadDoneTrigger();
     void HandleChangeDisplayModeTrigger(RomBrowserState newState);
-
-    bool IsRomBrowserVisible() const;
 
     void MainLoop();
     void Update();

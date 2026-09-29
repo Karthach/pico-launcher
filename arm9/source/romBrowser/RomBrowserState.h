@@ -8,5 +8,5 @@ enum class RomBrowserState
     LoadingFolder,
     Launching,
     DisplaySettings,
-    ThemeSettings
+    GoingToSettingsScreen
 };
