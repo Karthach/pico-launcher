@@ -191,7 +191,7 @@ void CustomTheme::LoadRomBrowserResources(const VramContext& mainVramContext, co
     const auto file = std::make_unique<File>();
     if (!OpenThemeFile(*file, "theme.json"))
     {
-        LOG_ERROR("Custom theme '%s' has no readable theme.json.\n", GetFolderName());
+        LOG_ERROR("Custom theme '%s' has no readable theme.json.\n", _folderName.GetString());
         return;
     }
 
