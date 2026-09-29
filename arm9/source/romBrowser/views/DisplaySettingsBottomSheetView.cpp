@@ -55,11 +55,12 @@ static RomBrowserLayout sRomBrowserDisplayModes[] =
     RomBrowserLayout::BannerList
 };
 
-static RomBrowserSortMode sRomBrowserSortModes[3] =
+static RomBrowserSortMode sRomBrowserSortModes[4] =
 {
     [0] = RomBrowserSortMode::NameAscending,
     [1] = RomBrowserSortMode::NameDescending,
-    [2] = RomBrowserSortMode::TitleAscending
+    [2] = RomBrowserSortMode::TitleAscending,
+    [3] = RomBrowserSortMode::TitleDescending
 };
 
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
@@ -188,6 +189,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
         _sortOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameDescendingIconTiles, sortNameDescendingIconTilesLen));
         _sortOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
+        _sortOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
     }
 
     _layoutNameLabel->InitVram(vramContext);
@@ -241,7 +243,8 @@ void DisplaySettingsBottomSheetView::Update()
     const char* sortKeys[] = {
         "sort_name_ascending",
         "sort_name_descending",
-        "sort_title_ascending"
+        "sort_title_ascending",
+        "sort_title_descending"
     };
     int sortIdx = 0;
     for (u32 i = 0; i < (u32)_sortOptions.size(); i++)

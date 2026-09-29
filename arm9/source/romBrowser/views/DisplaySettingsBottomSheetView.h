@@ -49,7 +49,7 @@ private:
     SharedPtr<Label2DView> _languageLabel;
 
     std::array<SharedPtr<IconButton2DView>, 3> _layoutOptions;
-    std::array<SharedPtr<IconButton2DView>, 3> _sortOptions;
+    std::array<SharedPtr<IconButton2DView>, 4> _sortOptions;
     std::array<SharedPtr<ChipView>, 2> _languageOptions;
 
     const MaterialColorScheme* _materialColorScheme;

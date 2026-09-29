@@ -5,5 +5,6 @@ enum class RomBrowserSortMode
     NameAscending,
     NameDescending,
     LastModified,
-    TitleAscending
+    TitleAscending,
+    TitleDescending
 };
