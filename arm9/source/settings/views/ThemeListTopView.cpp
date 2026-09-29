@@ -36,7 +36,7 @@ void ThemeListTopView::VBlank()
         _lastSelectedItem = selectedItem;
         if (selectedItem < 0)
         {
-            memset(GFX_BG_SUB, 0, 256 * 192 * 2);
+            memset((void*)GFX_BG_SUB, 0, 256 * 192 * 2);
             return;
         }
 
@@ -47,7 +47,7 @@ void ThemeListTopView::VBlank()
         }
         else
         {
-            memset(GFX_BG_SUB, 0, 256 * 192 * 2);
+            memset((void*)GFX_BG_SUB, 0, 256 * 192 * 2);
         }
     }
 }
