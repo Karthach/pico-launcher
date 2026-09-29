@@ -65,6 +65,11 @@ public:
         _romBrowserController->HideDisplaySettings();
     }
 
+    void GotoSettingsScreen()
+    {
+        _romBrowserController->GotoSettingsScreen();
+    }
+
 private:
     IRomBrowserController* _romBrowserController;
     IAppSettingsService* _appSettingsService;

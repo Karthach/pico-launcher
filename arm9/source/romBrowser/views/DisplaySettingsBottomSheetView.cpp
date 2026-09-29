@@ -74,9 +74,6 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _sortingNameLabel(Label2DView::CreateShared(96, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
-    , _layoutScrollX(0)
-    , _isDraggingLayout(false)
-    , _isManualScroll(false)
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
 {
