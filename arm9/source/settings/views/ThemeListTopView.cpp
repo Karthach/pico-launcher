@@ -1,4 +1,5 @@
 #include "common.h"
+#include <string.h>
 #include <libtwl/dma/dmaNitro.h>
 #include <libtwl/gfx/gfx.h>
 #include <libtwl/gfx/gfxBackground.h>
@@ -32,11 +33,21 @@ void ThemeListTopView::VBlank()
     int selectedItem = _viewModel->GetSelectedItem();
     if (selectedItem != _lastSelectedItem)
     {
+        _lastSelectedItem = selectedItem;
+        if (selectedItem < 0)
+        {
+            memset(GFX_BG_SUB, 0, 256 * 192 * 2);
+            return;
+        }
+
         auto extraThemeInfo = _viewModel->GetSettingsController()->GetThemeInfoManager().GetExtraThemeInfo(selectedItem);
         if (extraThemeInfo)
         {
             dma_ntrCopy32(3, extraThemeInfo->previewImage, GFX_BG_SUB, 256 * 192 * 2);
-            _lastSelectedItem = selectedItem;
+        }
+        else
+        {
+            memset(GFX_BG_SUB, 0, 256 * 192 * 2);
         }
     }
 }

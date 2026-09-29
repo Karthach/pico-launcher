@@ -31,13 +31,11 @@ void CustomMainBackground::LoadResources(const ITheme& theme, const VramContext&
 {
     auto tmpBuf = std::unique_ptr<u8[]>(new(cache_align) u8[256 * 192 * 2]);
     const auto file = std::make_unique<File>();
-    if (theme.OpenThemeFile(*file, "bottombg.bin"))
+    mem_setVramAMapping(MEM_VRAM_AB_LCDC);
+    memset((void*)0x6800000, 0, 256 * 192 * 2);
+    if (theme.OpenThemeFile(*file, "bottombg.bin") && file->ReadExact(tmpBuf.get(), 256 * 192 * 2))
     {
-        u32 bytesRead = 0;
-        file->Read(tmpBuf.get(), 256 * 192 * 2, bytesRead);
-        mem_setVramAMapping(MEM_VRAM_AB_LCDC);
         memcpy((void*)0x6800000, tmpBuf.get(), 256 * 192 * 2);
-        mem_setVramAMapping(MEM_VRAM_AB_TEX_SLOT_1);
-        file->Close();
     }
+    mem_setVramAMapping(MEM_VRAM_AB_TEX_SLOT_1);
 }

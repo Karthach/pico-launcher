@@ -3,6 +3,7 @@
 #include "ThemeAdapter.h"
 #include "gui/views/RecyclerView.h"
 #include "gui/views/ViewContainer.h"
+#include "gui/views/Label2DView.h"
 #include "settings/viewModels/ThemeListViewModel.h"
 #include "settings/views/SettingsAppBarView.h"
 
@@ -17,7 +18,7 @@ class ThemeListBottomView : public ViewContainer
 public:
     ThemeListBottomView(SharedPtr<ThemeListViewModel> viewModel, const MaterialColorScheme* materialColorScheme,
         const IRomBrowserViewFactory* romBrowserViewFactory, const IThemeFileIconFactory* themeFileIconFactory,
-        VBlankTextureLoader* vblankTextureLoader);
+        VBlankTextureLoader* vblankTextureLoader, const IFontRepository* fontRepository);
 
     void InitVram(const VramContext& vramContext) override;
     void Update() override;
@@ -31,7 +32,10 @@ public:
 
     void Focus(FocusManager& focusManager)
     {
-        _recyclerView->Focus(focusManager);
+        if (_themeAdapter->GetItemCount() == 0)
+            _appBarView->Focus(focusManager);
+        else
+            _recyclerView->Focus(focusManager);
     }
 
     SharedPtr<SettingsAppBarView> _appBarView;
@@ -39,4 +43,5 @@ private:
     SharedPtr<RecyclerView> _recyclerView;
     SharedPtr<ThemeAdapter> _themeAdapter;
     SharedPtr<ThemeListViewModel> _viewModel;
+    SharedPtr<Label2DView> _emptyStateLabel;
 };

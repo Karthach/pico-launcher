@@ -10,6 +10,7 @@
 #pragma GCC optimize("Os")
 
 #define JSON_RESERVED_SIZE  2048
+#define MAX_THEME_JSON_SIZE 8192
 
 #define KEY_TYPE            "type"
 #define KEY_NAME            "name"
@@ -44,9 +45,9 @@ static Rgb<8, 8, 8> parseColor(const JsonObjectConst& json, const Rgb<8, 8, 8>& 
     }
 
     return Rgb<8, 8, 8>(
-        json[KEY_COLOR_R] | 0,
-        json[KEY_COLOR_G] | 0,
-        json[KEY_COLOR_B] | 0
+        json[KEY_COLOR_R] | defaultColor.r,
+        json[KEY_COLOR_G] | defaultColor.g,
+        json[KEY_COLOR_B] | defaultColor.b
     );
 }
 
@@ -54,9 +55,7 @@ static std::unique_ptr<ThemeInfo> fromJson(const TCHAR* folderName, const JsonDo
 {
     ThemeType themeType;
     if (!tryParseThemeType(json[KEY_TYPE].as<const char*>(), themeType))
-    {
-        themeType = ThemeType::Custom;
-    }
+        return nullptr;
     return std::make_unique<ThemeInfo>(
         folderName,
         themeType,
@@ -80,7 +79,7 @@ std::unique_ptr<ThemeInfo> ThemeInfoFactory::CreateFromThemeFolder(const TCHAR* 
     }
 
     u32 fileSize = file->GetSize();
-    if (fileSize == 0)
+    if (fileSize == 0 || fileSize > MAX_THEME_JSON_SIZE)
     {
         return nullptr;
     }
@@ -88,8 +87,7 @@ std::unique_ptr<ThemeInfo> ThemeInfoFactory::CreateFromThemeFolder(const TCHAR* 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
     u8* fileDataPtr = fileData.get();
 
-    u32 bytesRead = 0;
-    if (file->Read(fileDataPtr, fileSize, bytesRead) != FR_OK)
+    if (!file->ReadExact(fileDataPtr, fileSize))
     {
         return nullptr;
     }

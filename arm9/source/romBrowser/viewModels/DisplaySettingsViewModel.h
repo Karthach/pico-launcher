@@ -52,17 +52,13 @@ public:
         {
             _appSettingsService->GetAppSettings().language = language;
             _appSettingsService->Save();
+            _romBrowserController->RestartForLanguageChange();
         }
     }
 
     void Close()
     {
         _romBrowserController->HideDisplaySettings();
-    }
-
-    void GotoSettingsScreen()
-    {
-        _romBrowserController->GotoSettingsScreen();
     }
 
 private:

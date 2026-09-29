@@ -31,6 +31,7 @@ public:
     void ShowDisplaySettings() override;
     void HideDisplaySettings() override;
     void GotoSettingsScreen() override;
+    void RestartForLanguageChange() override;
 
     void Update() override;
 

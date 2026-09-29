@@ -31,10 +31,7 @@ public:
     void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken,
         const ChipView::VramToken& chipViewVramToken);
 
-    void Focus(FocusManager& focusManager) override
-    {
-        focusManager.Focus(_layoutOptions[0]);
-    }
+    void Focus(FocusManager& focusManager) override;
 
 protected:
     void Close() override;
@@ -44,10 +41,10 @@ private:
     ILocalizationService& _localizationService;
 
     SharedPtr<Label2DView> _titleLabel;
-    SharedPtr<IconButton2DView> _themeButton;
     SharedPtr<Label2DView> _layoutLabel;
     SharedPtr<Label2DView> _layoutNameLabel;
     SharedPtr<Label2DView> _sortingLabel;
+    SharedPtr<Label2DView> _sortingNameLabel;
     SharedPtr<Label2DView> _languageLabel;
 
     std::array<SharedPtr<IconButton2DView>, 5> _layoutOptions;

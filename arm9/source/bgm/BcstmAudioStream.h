@@ -60,7 +60,7 @@ private:
 
     bool TryLoadBcstm();
     u32 GetTotalSamplesInCurrentBlock();
-    void FetchBlock();
+    bool FetchBlock();
     void DecodeAdpcmSamples(DspAdpcmContext& context, s16* dst, u32 count);
     void DecodeLoopAdpcmFrame(DspAdpcmContext& context, u32 scaleCoef, s16 last1, s16 last2, u32 sampleOffset);
 };

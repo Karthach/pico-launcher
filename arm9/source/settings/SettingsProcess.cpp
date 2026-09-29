@@ -48,7 +48,7 @@ void SettingsProcess::Run()
     auto viewModel = SharedPtr<ThemeListViewModel>::MakeShared(_settingsController.get());
     _themeListBottomView = ThemeListBottomView::CreateShared(viewModel,
         &_theme->GetMaterialColorScheme(), _theme->GetRomBrowserViewFactory(),
-        _theme->GetThemeFileIconFactory(), &_vblankTextureLoader);
+        _theme->GetThemeFileIconFactory(), &_vblankTextureLoader, _theme->GetFontRepository());
     _themeListBottomView->InitVram(_mainVramContext);
     _themeListBottomView->Focus(_focusManager);
 

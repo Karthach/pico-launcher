@@ -22,11 +22,9 @@ void CustomSubBackground::LoadResources(const ITheme& theme, const VramContext& 
 {
     auto tmpBuf = std::unique_ptr<u8[]>(new(cache_align) u8[256 * 192 * 2]);
     const auto file = std::make_unique<File>();
-    if (theme.OpenThemeFile(*file, "topbg.bin"))
+    memset((u8*)BG_GFX_SUB + 0x8000, 0, 256 * 192 * 2);
+    if (theme.OpenThemeFile(*file, "topbg.bin") && file->ReadExact(tmpBuf.get(), 256 * 192 * 2))
     {
-        u32 bytesRead = 0;
-        file->Read(tmpBuf.get(), 256 * 192 * 2, bytesRead);
         memcpy((u8*)BG_GFX_SUB + 0x8000, tmpBuf.get(), 256 * 192 * 2);
-        file->Close();
     }
 }
