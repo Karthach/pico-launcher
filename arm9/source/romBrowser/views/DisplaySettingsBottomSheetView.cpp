@@ -201,6 +201,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
     }
 
     _layoutNameLabel->InitVram(vramContext);
+    _sortingNameLabel->InitVram(vramContext);
 
     for (auto& layoutOption : _layoutOptions)
     {
@@ -457,12 +458,15 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
         _isDraggingSort = true;
         _isManualSortScroll = true;
         _lastSortTouchPoint = touchPoint;
-        for (auto& sortOption : _sortOptions)
+    }
+
+    // The sprites are not hardware-clipped at the scroll viewport edge. Keep the
+    // visible part of a partially exposed button selectable at that edge too.
+    for (auto& sortOption : _sortOptions)
+    {
+        if (sortOption->GetBounds().Contains(touchPoint))
         {
-            if (sortOption->GetBounds().Contains(touchPoint))
-            {
-                sortOption->HandlePenDown(touchPoint, focusManager);
-            }
+            sortOption->HandlePenDown(touchPoint, focusManager);
         }
     }
 
