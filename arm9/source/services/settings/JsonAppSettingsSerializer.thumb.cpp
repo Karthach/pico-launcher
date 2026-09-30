@@ -8,6 +8,7 @@
 #pragma GCC optimize("Os")
 
 #define JSON_RESERVED_SIZE  2048
+#define MAX_SETTINGS_JSON_SIZE  8192
 
 #define KEY_LANGUAGE                 "language"
 #define KEY_ROM_BROWSER_LAYOUT       "romBrowserLayout"
@@ -196,28 +197,29 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }
 
-bool JsonAppSettingsSerializer::Deserialize(AppSettings* appSettings, const char* filePath) const
+SettingsLoadResult JsonAppSettingsSerializer::Deserialize(AppSettings* appSettings, const char* filePath) const
 {
     const auto file = std::make_unique<File>();
-    if (file->Open(filePath, FA_READ | FA_OPEN_EXISTING) != FR_OK)
-        return false;
+    FRESULT openResult = file->Open(filePath, FA_READ | FA_OPEN_EXISTING);
+    if (openResult != FR_OK)
+    {
+        return openResult == FR_NO_FILE || openResult == FR_NO_PATH
+            ? SettingsLoadResult::Missing : SettingsLoadResult::Invalid;
+    }
 
     u32 fileSize = file->GetSize();
-    if (fileSize == 0)
-        return false;
+    if (fileSize == 0 || fileSize > MAX_SETTINGS_JSON_SIZE)
+        return SettingsLoadResult::Invalid;
 
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[fileSize]);
-    u8* fileDataPtr = fileData.get();
-
-    u32 bytesRead = 0;
-    if (file->Read(fileDataPtr, fileSize, bytesRead) != FR_OK)
-        return false;
+    if (!fileData || !file->ReadExact(fileData.get(), fileSize))
+        return SettingsLoadResult::Invalid;
 
     DynamicJsonDocument json(JSON_RESERVED_SIZE);
-    if (deserializeJson(json, fileDataPtr, fileSize) != DeserializationError::Ok)
-        return false;
+    if (deserializeJson(json, fileData.get(), fileSize) != DeserializationError::Ok)
+        return SettingsLoadResult::Invalid;
 
     readJson(appSettings, json);
 
-    return true;
+    return SettingsLoadResult::Loaded;
 }
