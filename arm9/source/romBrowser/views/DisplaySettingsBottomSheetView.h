@@ -53,8 +53,12 @@ private:
     std::array<SharedPtr<ChipView>, 2> _languageOptions;
 
     int _sortScrollX = 0;
+    int _layoutScrollX = 0;
+    bool _isDraggingLayout = false;
+    bool _isManualLayoutScroll = false;
     bool _isDraggingSort = false;
     bool _isManualSortScroll = false;
+    Point _lastLayoutTouchPoint;
     Point _lastSortTouchPoint;
     u32 _sortClipMaskVramOffset = 0;
 
@@ -70,6 +74,8 @@ private:
         ILocalizationService& localizationService);
 
     void UpdateLabels();
+    void ClampLayoutScroll();
+    void EnsureLayoutOptionVisible(u32 index);
     void ClampSortScroll();
     void EnsureSortOptionVisible(u32 index);
 

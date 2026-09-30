@@ -141,6 +141,7 @@ SharedPtr<IconButton2DView> DisplaySettingsBottomSheetView::CreateLayoutOptionIc
             if (self->_layoutOptions[i].GetPointer() == sender)
             {
                 self->_viewModel->SetRomBrowserDisplayMode(sRomBrowserDisplayModes[i]);
+                self->_isManualLayoutScroll = false;
                 break;
             }
         }
@@ -247,6 +248,24 @@ void DisplaySettingsBottomSheetView::ClampSortScroll()
     if (_sortScrollX < minScrollX) _sortScrollX = minScrollX;
 }
 
+void DisplaySettingsBottomSheetView::ClampLayoutScroll()
+{
+    const int minScrollX = LAYOUT_CONTAINER_WIDTH - (int)_layoutOptions.size() * 32;
+    if (_layoutScrollX > 0) _layoutScrollX = 0;
+    if (_layoutScrollX < minScrollX) _layoutScrollX = minScrollX;
+}
+
+void DisplaySettingsBottomSheetView::EnsureLayoutOptionVisible(u32 index)
+{
+    const int optionX = LAYOUT_CONTAINER_X + _layoutScrollX + (int)index * 32;
+    if (optionX < LAYOUT_CONTAINER_X)
+        _layoutScrollX += LAYOUT_CONTAINER_X - optionX;
+    else if (optionX + 32 > LAYOUT_CONTAINER_X + LAYOUT_CONTAINER_WIDTH)
+        _layoutScrollX -= optionX + 32 - (LAYOUT_CONTAINER_X + LAYOUT_CONTAINER_WIDTH);
+    ClampLayoutScroll();
+    _isManualLayoutScroll = true;
+}
+
 void DisplaySettingsBottomSheetView::EnsureSortOptionVisible(u32 index)
 {
     const int optionX = 120 + _sortScrollX + (int)index * 32;
@@ -283,6 +302,13 @@ void DisplaySettingsBottomSheetView::Update()
     
     _layoutNameLabel->SetText(_localizationService.GetString(layoutKeys[layoutIdx]));
 
+    if (!_isManualLayoutScroll)
+    {
+        _layoutScrollX = (layoutIdx + 1) * 32 > LAYOUT_CONTAINER_WIDTH
+            ? LAYOUT_CONTAINER_WIDTH - (layoutIdx + 1) * 32 : 0;
+        ClampLayoutScroll();
+    }
+
     const char* sortKeys[] = {
         "sort_name_ascending",
         "sort_name_descending",
@@ -307,7 +333,7 @@ void DisplaySettingsBottomSheetView::Update()
         ClampSortScroll();
     }
 
-    int x = 0;
+    int x = _layoutScrollX;
     u32 idx = 0;
     for (auto& layoutOption : _layoutOptions)
     {
@@ -421,6 +447,11 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
             langOption->Draw(graphicsContext);
         }
 
+        // Labels share the rows' horizontal space; draw them above the clip masks.
+        const u32 oldLabelPriority = graphicsContext.SetPriority(0);
+        _layoutNameLabel->Draw(graphicsContext);
+        _sortingNameLabel->Draw(graphicsContext);
+        graphicsContext.SetPriority(oldLabelPriority);
     }
     graphicsContext.SetPriority(oldPrio);
     graphicsContext.ResetClipArea();
@@ -494,6 +525,13 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
         }
     }
 
+    if (layoutRect.Contains(touchPoint))
+    {
+        _isDraggingLayout = true;
+        _isManualLayoutScroll = true;
+        _lastLayoutTouchPoint = touchPoint;
+    }
+
     Rectangle sortRect(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
         SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
     if (sortRect.Contains(touchPoint))
@@ -526,6 +564,16 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
 void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenMove(touchPoint, focusManager);
+    if (_isDraggingLayout)
+    {
+        _layoutScrollX += touchPoint.x - _lastLayoutTouchPoint.x;
+        ClampLayoutScroll();
+        _lastLayoutTouchPoint = touchPoint;
+        for (auto& layoutOption : _layoutOptions)
+        {
+            layoutOption->HandlePenMove(touchPoint, focusManager);
+        }
+    }
     if (_isDraggingSort)
     {
         _sortScrollX += touchPoint.x - _lastSortTouchPoint.x;
@@ -541,11 +589,14 @@ void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, Focu
 void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
+    const Rectangle layoutRect(LAYOUT_CONTAINER_X, _position.y + LAYOUT_OPTIONS_Y,
+        LAYOUT_CONTAINER_WIDTH, LAYOUT_CONTAINER_HEIGHT);
     const Rectangle sortRect(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
         SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
     for (auto& layoutOption : _layoutOptions)
     {
-        layoutOption->HandlePenUp(lastTouchPoint, focusManager);
+        layoutOption->HandlePenUp(layoutRect.Contains(lastTouchPoint)
+            ? lastTouchPoint : Point(-1, -1), focusManager);
     }
     for (auto& sortOption : _sortOptions)
     {
@@ -553,6 +604,7 @@ void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, Fo
             ? lastTouchPoint : Point(-1, -1), focusManager);
     }
     _isDraggingSort = false;
+    _isDraggingLayout = false;
 }
 
 SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>& currentFocus,
@@ -571,11 +623,13 @@ SharedPtr<View> DisplaySettingsBottomSheetView::MoveFocus(const SharedPtr<View>&
             if (direction == FocusMoveDirection::Left)
             {
                 if (--idx < 0) idx = 0;
+                EnsureLayoutOptionVisible((u32)idx);
                 return _layoutOptions[idx];
             }
             else if (direction == FocusMoveDirection::Right)
             {
                 if (++idx >= (int)_layoutOptions.size()) idx = _layoutOptions.size() - 1;
+                EnsureLayoutOptionVisible((u32)idx);
                 return _layoutOptions[idx];
             }
             else if (direction == FocusMoveDirection::Up)
