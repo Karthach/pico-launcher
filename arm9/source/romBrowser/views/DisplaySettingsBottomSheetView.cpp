@@ -1,7 +1,9 @@
 #include "common.h"
 #include "gui/GraphicsContext.h"
+#include "gui/OamBuilder.h"
 #include "gui/VramContext.h"
 #include "gui/IVramManager.h"
+#include "gui/palette/GradientPalette.h"
 #include "hGridIcon.h"
 #include "vGridIcon.h"
 #include "bannerListIcon.h"
@@ -41,7 +43,7 @@
 #define SORTING_LABEL_X     20
 #define SORTING_LABEL_Y     70
 #define SORTING_NAME_X      20
-#define SORTING_NAME_Y      103
+#define SORTING_NAME_Y      87
 #define SORTING_OPTIONS_Y   69
 #define SORTING_OPTIONS_X   120
 #define SORTING_OPTIONS_WIDTH 110
@@ -77,7 +79,7 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
-    , _sortingNameLabel(Label2DView::CreateShared(200, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
+    , _sortingNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
@@ -94,7 +96,6 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     AddChildTail(_layoutNameLabel.GetPointer());
     _sortingLabel->SetText(_localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
-    AddChildTail(_sortingNameLabel.GetPointer());
     _languageLabel->SetText(_localizationService.GetString("language_settings_title"));
     AddChildTail(_languageLabel.GetPointer());
 
@@ -185,6 +186,11 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
     const auto objVramManager = vramContext.GetObjVramManager();
     if (objVramManager)
     {
+        _sortClipMaskVramOffset = objVramManager->Alloc(64 * 32 / 2);
+        auto sortClipMaskTiles = objVramManager->GetVramAddress(_sortClipMaskVramOffset);
+        for (u32 i = 0; i < (64 * 32 / 4); i++)
+            sortClipMaskTiles[i] = 0x1111;
+
         _themeButton->SetIconVramOffset(LoadIcon(*objVramManager, themeIconTiles, themeIconTilesLen));
 
         // layout options
@@ -374,10 +380,35 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         }
         graphicsContext.SetClipArea(GetBounds());
 
+        // DS OAM sprites do not respect the software clip rectangle. Mask the
+        // overflow with the panel color, leaving partially visible edge icons.
+        const auto sheetColor = _materialColorScheme->GetColor(md::sys::color::surfaceContainerLow);
+        const u32 maskPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
+            GradientPalette(sheetColor, sheetColor), sortClip.GetTop(), sortClip.GetBottom());
+        auto sortClipMasks = graphicsContext.GetOamManager().AllocOams(2);
+        const u32 oldMaskPriority = graphicsContext.SetPriority(0);
+        OamBuilder::OamWithSize<64, 32>(
+                SORTING_OPTIONS_X - 64, _position.y + SORTING_OPTIONS_Y, _sortClipMaskVramOffset >> 7)
+            .WithPalette16(maskPaletteRow)
+            .WithPriority(graphicsContext.GetPriority())
+            .Build(sortClipMasks[0]);
+        OamBuilder::OamWithSize<64, 32>(
+                SORTING_OPTIONS_X + SORTING_OPTIONS_WIDTH, _position.y + SORTING_OPTIONS_Y,
+                _sortClipMaskVramOffset >> 7)
+            .WithPalette16(maskPaletteRow)
+            .WithPriority(graphicsContext.GetPriority())
+            .Build(sortClipMasks[1]);
+        graphicsContext.SetPriority(oldMaskPriority);
+
         for (auto& langOption : _languageOptions)
         {
             langOption->Draw(graphicsContext);
         }
+
+        // Keep the selected sort mode above the game list drawn underneath.
+        graphicsContext.SetPriority(0);
+        _sortingNameLabel->Draw(graphicsContext);
+        graphicsContext.SetPriority(1);
     }
     graphicsContext.SetPriority(oldPrio);
     graphicsContext.ResetClipArea();
@@ -386,6 +417,7 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 void DisplaySettingsBottomSheetView::VBlank()
 {
     BottomSheetView::VBlank();
+    _sortingNameLabel->VBlank();
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->VBlank();
@@ -460,11 +492,9 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
         _lastSortTouchPoint = touchPoint;
     }
 
-    // The sprites are not hardware-clipped at the scroll viewport edge. Keep the
-    // visible part of a partially exposed button selectable at that edge too.
     for (auto& sortOption : _sortOptions)
     {
-        if (sortOption->GetBounds().Contains(touchPoint))
+        if (sortRect.Contains(touchPoint) && sortOption->GetBounds().Contains(touchPoint))
         {
             sortOption->HandlePenDown(touchPoint, focusManager);
         }
@@ -506,7 +536,8 @@ void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, Fo
     }
     for (auto& sortOption : _sortOptions)
     {
-        sortOption->HandlePenUp(lastTouchPoint, focusManager);
+        sortOption->HandlePenUp(sortRect.Contains(lastTouchPoint)
+            ? lastTouchPoint : Point(-1, -1), focusManager);
     }
     _isDraggingSort = false;
 }

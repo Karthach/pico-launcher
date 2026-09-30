@@ -56,6 +56,7 @@ private:
     bool _isDraggingSort = false;
     bool _isManualSortScroll = false;
     Point _lastSortTouchPoint;
+    u32 _sortClipMaskVramOffset = 0;
 
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;
