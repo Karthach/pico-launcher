@@ -81,6 +81,7 @@ private:
     QueueTask<void> _navigateTask;
     bool _saveSettingsPending = false;
     String<char, 256> _currentFolderPath = "/";
+    String<char, 256> _favoritesReturnPath = "/";
     String<char, 24> _searchQuery;
     bool _favoritesView = false;
     bool _searchRequested = false;

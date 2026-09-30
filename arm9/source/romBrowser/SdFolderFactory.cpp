@@ -62,3 +62,30 @@ std::unique_ptr<SdFolder> SdFolderFactory::CreateFromPath(const char* path) cons
 
     return std::make_unique<SdFolder>(fileInfos, count);
 }
+
+std::unique_ptr<SdFolder> SdFolderFactory::CreateFavorites(const std::vector<String<char, 256>>& paths) const
+{
+    Directory rootDirectory;
+    if (rootDirectory.Open("/") != FR_OK)
+        return nullptr;
+
+    auto files = (FileInfo**)malloc(sizeof(FileInfo*) * std::max<size_t>(paths.size(), 1));
+    if (!files)
+        return nullptr;
+
+    int count = 0;
+    auto info = std::make_unique<FILINFO>();
+    for (const auto& path : paths)
+    {
+        if (f_stat(path.GetString(), info.get()) != FR_OK || (info->fattrib & AM_DIR))
+            continue;
+
+        const char* fileName = strrchr(path.GetString(), '/');
+        fileName = fileName ? fileName + 1 : path.GetString();
+        auto fileType = _fileTypeProvider->GetFileType(fileName);
+        files[count++] = new FileInfo(fileName, fileType,
+            FastFileRef(rootDirectory.GetFatFsDirectory(), info.get()), info->fattrib, path.GetString());
+    }
+
+    return std::make_unique<SdFolder>(files, count);
+}

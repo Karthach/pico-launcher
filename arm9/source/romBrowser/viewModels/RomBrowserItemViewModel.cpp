@@ -31,3 +31,13 @@ void RomBrowserItemViewModel::ShowGameInfo()
         }
     }
 }
+
+void RomBrowserItemViewModel::ToggleFavorite()
+{
+    if (_index >= 0)
+    {
+        const auto& item = _romBrowserController->GetRomBrowserViewModel()->GetFileInfoManager().GetItem(_index);
+        if (item.GetFileType()->GetClassification() != FileTypeClassification::Folder)
+            _romBrowserController->ToggleFavorite(item);
+    }
+}

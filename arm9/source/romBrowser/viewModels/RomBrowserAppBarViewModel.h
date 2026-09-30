@@ -10,7 +10,10 @@ public:
 
     void NavigateUp()
     {
-        _romBrowserController->NavigateUp();
+        if (_romBrowserController->IsFavoritesView())
+            _romBrowserController->ToggleFavoritesView();
+        else
+            _romBrowserController->NavigateUp();
     }
 
     void ShowDisplaySettings()
