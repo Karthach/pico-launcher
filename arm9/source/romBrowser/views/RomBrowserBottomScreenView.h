@@ -7,6 +7,7 @@
 #include "RomBrowserView.h"
 #include "RomBrowserAppBarView.h"
 #include "../viewModels/RomBrowserBottomScreenViewModel.h"
+#include <array>
 
 class IRomBrowserViewFactory;
 class VBlankTextureLoader;
@@ -94,6 +95,12 @@ private:
     SharedPtr<RomBrowserView> _romBrowserView;
     SharedPtr<AlphabetBar> _alphabetBar;
     VBlankTextureLoader* _vblankTextureLoader;
+    std::array<SharedPtr<Label2DView>, 30> _searchKeys;
+    SharedPtr<Label2DView> _searchText;
+    bool _searchActive = false;
+    Point _searchPenDown;
+    int _searchCursor = 0;
+    char _pendingSearch[25] = {};
 
     RomBrowserBottomScreenView(
         RomBrowserBottomScreenViewModel* viewModel,
@@ -102,5 +109,9 @@ private:
         const IRomBrowserViewFactory* romBrowserViewFactory,
         const IFontRepository* fontRepository,
         const MaterialColorScheme* materialColorScheme,
-        VBlankTextureLoader* vblankTextureLoader);
+    VBlankTextureLoader* vblankTextureLoader);
+
+    void UpdateSearchKeyboard();
+    void HandleSearchKey(int index);
+    void SubmitSearch();
 };

@@ -18,6 +18,10 @@ public:
         _romBrowserController->ShowDisplaySettings();
     }
 
+    void ShowSearch() { _romBrowserController->ShowSearch(); }
+    void ToggleFavorites() { _romBrowserController->ToggleFavoritesView(); }
+    bool IsFavoritesView() const { return _romBrowserController->IsFavoritesView(); }
+
     void ShowThemeSettings()
     {
         _romBrowserController->GotoSettingsScreen();

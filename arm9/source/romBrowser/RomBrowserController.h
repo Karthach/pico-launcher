@@ -32,6 +32,15 @@ public:
     void HideDisplaySettings() override;
     void GotoSettingsScreen() override;
     void RestartForLanguageChange() override;
+    void SetSearchQuery(const char* query) override;
+    const char* GetSearchQuery() const override { return _searchQuery.GetString(); }
+    bool IsFavorite(const FileInfo& fileInfo) const override;
+    void ToggleFavorite(const FileInfo& fileInfo) override;
+    bool IsFavoritesView() const override { return _favoritesView; }
+    void ToggleFavoritesView() override;
+    void ShowSearch() override { _searchRequested = true; }
+    bool ConsumeSearchRequest() override { bool requested = _searchRequested; _searchRequested = false; return requested; }
+    const char* GetLanguage() const override { return _appSettingsService->GetAppSettings().language.GetString(); }
 
     void Update() override;
 
@@ -71,6 +80,10 @@ private:
     FileInfo _triggerFileInfo;
     QueueTask<void> _navigateTask;
     bool _saveSettingsPending = false;
+    String<char, 256> _currentFolderPath = "/";
+    String<char, 24> _searchQuery;
+    bool _favoritesView = false;
+    bool _searchRequested = false;
     std::unique_ptr<CoverRepository> _coverRepository;
     std::unique_ptr<IconRepository> _iconRepository;
     std::unique_ptr<BannerRepository> _bannerRepository;

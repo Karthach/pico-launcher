@@ -32,20 +32,45 @@ RomBrowserBottomScreenView::RomBrowserBottomScreenView(
         *displayMode, romBrowserViewFactory))
     , _alphabetBar(SharedPtr<AlphabetBar>::MakeShared(this, fontRepository, materialColorScheme))
     , _vblankTextureLoader(vblankTextureLoader)
+    , _searchText(Label2DView::CreateShared(224, 16, 28, fontRepository->GetFont(FontType::Medium10)))
 {
     _romBrowserAppBarView->SetParent(this);
     _alphabetBar->SetParent(this);
+    static const char* searchKeys[30] = {
+        "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
+        "A", "S", "D", "F", "G", "H", "J", "K", "L",
+        "Z", "X", "C", "V", "B", "N", "M",
+        "DEL", "SPACE", "CLEAR", "OK"
+    };
+    for (u32 i = 0; i < _searchKeys.size(); i++)
+    {
+        _searchKeys[i] = Label2DView::CreateShared(i >= 26 ? 50 : 20, 16, 8, fontRepository->GetFont(FontType::Medium10));
+        _searchKeys[i]->SetText(searchKeys[i]);
+    }
 }
 
 void RomBrowserBottomScreenView::InitVram(const VramContext& vramContext)
 {
     _romBrowserAppBarView->InitVram(vramContext);
     _alphabetBar->InitVram(vramContext);
+    _searchText->InitVram(vramContext);
+    for (auto& key : _searchKeys) key->InitVram(vramContext);
 }
 
 void RomBrowserBottomScreenView::Update()
 {
     _romBrowserAppBarView->Update();
+    if (_viewModel->GetRomBrowserController()->ConsumeSearchRequest())
+    {
+        StringUtil::Copy(_pendingSearch, _viewModel->GetRomBrowserController()->GetSearchQuery(), sizeof(_pendingSearch));
+        _searchCursor = 0;
+        _searchActive = true;
+    }
+    if (_searchActive)
+    {
+        UpdateSearchKeyboard();
+        return;
+    }
     if (_romBrowserView && _viewModel->IsRomBrowserVisible())
     {
         _romBrowserView->Update();
@@ -56,6 +81,14 @@ void RomBrowserBottomScreenView::Update()
 void RomBrowserBottomScreenView::Draw(GraphicsContext& graphicsContext)
 {
     _romBrowserAppBarView->Draw(graphicsContext);
+    if (_searchActive)
+    {
+        graphicsContext.SetClipArea(Rectangle(0, 0, 256, 192));
+        for (auto& key : _searchKeys) key->Draw(graphicsContext);
+        _searchText->Draw(graphicsContext);
+        graphicsContext.ResetClipArea();
+        return;
+    }
     if (_romBrowserView && _viewModel->IsRomBrowserVisible())
     {
         _romBrowserView->Draw(graphicsContext);
@@ -66,6 +99,11 @@ void RomBrowserBottomScreenView::Draw(GraphicsContext& graphicsContext)
 void RomBrowserBottomScreenView::VBlank()
 {
     _romBrowserAppBarView->VBlank();
+    if (_searchActive)
+    {
+        _searchText->VBlank();
+        for (auto& key : _searchKeys) key->VBlank();
+    }
     if (_romBrowserView && _viewModel->IsRomBrowserVisible())
     {
         _romBrowserView->VBlank();
@@ -120,6 +158,37 @@ SharedPtr<View> RomBrowserBottomScreenView::MoveFocus(const SharedPtr<View>& cur
 
 bool RomBrowserBottomScreenView::HandleInput(const InputProvider& inputProvider, FocusManager& focusManager)
 {
+    if (_searchActive)
+    {
+        if (inputProvider.Triggered(InputKey::B))
+        {
+            _searchActive = false;
+            return true;
+        }
+        if (inputProvider.Triggered(InputKey::A))
+        {
+            HandleSearchKey(_searchCursor);
+            return true;
+        }
+        if (inputProvider.Triggered(InputKey::X))
+        {
+            const size_t length = strlen(_pendingSearch);
+            if (length) _pendingSearch[length - 1] = 0;
+            UpdateSearchKeyboard();
+            return true;
+        }
+        if (inputProvider.Triggered(InputKey::Start))
+        {
+            SubmitSearch();
+            return true;
+        }
+        if (inputProvider.Triggered(InputKey::DpadLeft)) _searchCursor = (_searchCursor + 29) % 30;
+        if (inputProvider.Triggered(InputKey::DpadRight)) _searchCursor = (_searchCursor + 1) % 30;
+        if (inputProvider.Triggered(InputKey::DpadUp)) _searchCursor = (_searchCursor + 20) % 30;
+        if (inputProvider.Triggered(InputKey::DpadDown)) _searchCursor = (_searchCursor + 10) % 30;
+        UpdateSearchKeyboard();
+        return true;
+    }
     if (inputProvider.Triggered(InputKey::B))
     {
         _viewModel->NavigateUp();
@@ -130,6 +199,11 @@ bool RomBrowserBottomScreenView::HandleInput(const InputProvider& inputProvider,
 
 void RomBrowserBottomScreenView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
 {
+    if (_searchActive)
+    {
+        _searchPenDown = touchPoint;
+        return;
+    }
     _romBrowserAppBarView->HandlePenDown(touchPoint, focusManager);
     if (_romBrowserView && _viewModel->IsRomBrowserVisible())
     {
@@ -146,6 +220,7 @@ void RomBrowserBottomScreenView::HandlePenDown(const Point& touchPoint, FocusMan
 
 void RomBrowserBottomScreenView::HandlePenMove(const Point& touchPoint, FocusManager& focusManager)
 {
+    if (_searchActive) return;
     _romBrowserAppBarView->HandlePenMove(touchPoint, focusManager);
     if (_romBrowserView && _viewModel->IsRomBrowserVisible())
     {
@@ -162,11 +237,96 @@ void RomBrowserBottomScreenView::HandlePenMove(const Point& touchPoint, FocusMan
 
 void RomBrowserBottomScreenView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
 {
+    if (_searchActive)
+    {
+        if (_searchPenDown.DistanceSquaredTo(lastTouchPoint) <= 64)
+        {
+            for (int i = 0; i < (int)_searchKeys.size(); i++)
+            {
+                if (_searchKeys[i]->GetBounds().Contains(lastTouchPoint))
+                {
+                    HandleSearchKey(i);
+                    break;
+                }
+            }
+        }
+        return;
+    }
     _romBrowserAppBarView->HandlePenUp(lastTouchPoint, focusManager);
     if (_romBrowserView && _viewModel->IsRomBrowserVisible())
     {
         _romBrowserView->HandlePenUp(lastTouchPoint, focusManager);
     }
+}
+
+void RomBrowserBottomScreenView::UpdateSearchKeyboard()
+{
+    static const int rowX[] = { 18, 29, 51 };
+    static const int rowY[] = { 58, 86, 114 };
+    for (int i = 0; i < 26; i++)
+    {
+        const int row = i < 10 ? 0 : i < 19 ? 1 : 2;
+        const int col = row == 0 ? i : row == 1 ? i - 10 : i - 19;
+        _searchKeys[i]->SetPosition(rowX[row] + col * 22, rowY[row]);
+    }
+    for (int i = 26; i < 30; i++)
+        _searchKeys[i]->SetPosition(8 + (i - 26) * 61, 148);
+
+    const bool spanish = !strcasecmp(_viewModel->GetRomBrowserController()->GetLanguage(), "spanish");
+    static const char* controlsEn[] = { "DEL", "SPACE", "CLEAR", "OK" };
+    static const char* controlsEs[] = { "BORRAR", "ESPACIO", "LIMPIAR", "OK" };
+    for (int i = 26; i < 30; i++)
+        _searchKeys[i]->SetText((spanish ? controlsEs : controlsEn)[i - 26]);
+    _searchText->SetText(_pendingSearch[0] ? _pendingSearch : (spanish ? "Buscar..." : "Search..."));
+    _searchText->SetPosition(16, 24);
+    _searchText->SetBackgroundColor(_materialColorScheme->surfaceContainerLow);
+    _searchText->SetForegroundColor(_materialColorScheme->primary);
+    for (int i = 0; i < (int)_searchKeys.size(); i++)
+    {
+        _searchKeys[i]->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
+        _searchKeys[i]->SetForegroundColor(i == _searchCursor ? _materialColorScheme->primary : _materialColorScheme->onSurfaceVariant);
+        _searchKeys[i]->Update();
+    }
+    _searchText->Update();
+}
+
+void RomBrowserBottomScreenView::HandleSearchKey(int index)
+{
+    const size_t length = strlen(_pendingSearch);
+    if (index < 26)
+    {
+        if (length < sizeof(_pendingSearch) - 1)
+        {
+            _pendingSearch[length] = "QWERTYUIOPASDFGHJKLZXCVBNM"[index];
+            _pendingSearch[length + 1] = 0;
+        }
+    }
+    else if (index == 26)
+    {
+        if (length) _pendingSearch[length - 1] = 0;
+    }
+    else if (index == 27)
+    {
+        if (length < sizeof(_pendingSearch) - 1)
+        {
+            _pendingSearch[length] = ' ';
+            _pendingSearch[length + 1] = 0;
+        }
+    }
+    else if (index == 28)
+        _pendingSearch[0] = 0;
+    else if (index == 29)
+    {
+        SubmitSearch();
+        return;
+    }
+    UpdateSearchKeyboard();
+}
+
+void RomBrowserBottomScreenView::SubmitSearch()
+{
+    _viewModel->GetRomBrowserController()->SetSearchQuery(_pendingSearch);
+    _searchActive = false;
 }
 
 void RomBrowserBottomScreenView::RomBrowserViewModelInvalidated(const VramContext& vramContext)

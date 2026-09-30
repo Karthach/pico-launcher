@@ -7,7 +7,7 @@
 
 #pragma GCC optimize("Os")
 
-#define JSON_RESERVED_SIZE  2048
+#define JSON_RESERVED_SIZE  6144
 #define MAX_SETTINGS_JSON_SIZE  8192
 
 #define KEY_LANGUAGE                 "language"
@@ -17,6 +17,8 @@
 #define KEY_LAST_USED_FILE_PATH      "lastUsedFilePath"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
+#define KEY_FAVORITES                "favorites"
+#define MAX_FAVORITES                10
 
 static const char* serializeRomBrowserLayout(RomBrowserLayout romBrowserLayout)
 {
@@ -134,6 +136,14 @@ static void serializeFileAssociations(DynamicJsonDocument& json, const AppSettin
     }
 }
 
+static void serializeFavorites(DynamicJsonDocument& json, const AppSettings* appSettings)
+{
+    auto favorites = json[KEY_FAVORITES].to<JsonArray>();
+    const u32 count = std::min<u32>(appSettings->favoritePaths.size(), MAX_FAVORITES);
+    for (u32 i = 0; i < count; i++)
+        favorites.add(appSettings->favoritePaths[i].GetString());
+}
+
 static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& length)
 {
     DynamicJsonDocument json(JSON_RESERVED_SIZE);
@@ -143,6 +153,7 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
     json[KEY_THEME] = appSettings->theme.GetString();
     json[KEY_LAST_USED_FILE_PATH] = appSettings->lastUsedFilePath.GetString();
     serializeFileAssociations(json, appSettings);
+    serializeFavorites(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
     std::unique_ptr<u8[]> fileData(new(cache_align) u8[outputSize]);
@@ -195,6 +206,23 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     }
 
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
+
+    auto favorites = json[KEY_FAVORITES].as<JsonArrayConst>();
+    appSettings->favoritePaths.clear();
+    if (!favorites.isNull())
+    {
+        for (auto item : favorites)
+        {
+            const char* path = item.as<const char*>();
+            if (!path || !path[0] || appSettings->favoritePaths.size() >= MAX_FAVORITES)
+                continue;
+            bool duplicate = false;
+            for (const auto& favorite : appSettings->favoritePaths)
+                duplicate |= !strcasecmp(favorite.GetString(), path);
+            if (!duplicate)
+                appSettings->favoritePaths.emplace_back(path);
+        }
+    }
 }
 
 SettingsLoadResult JsonAppSettingsSerializer::Deserialize(AppSettings* appSettings, const char* filePath) const

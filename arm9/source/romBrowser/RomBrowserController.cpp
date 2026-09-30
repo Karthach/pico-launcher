@@ -79,6 +79,71 @@ void RomBrowserController::RestartForLanguageChange()
     gProcessManager.Goto<App>();
 }
 
+void RomBrowserController::SetSearchQuery(const char* query)
+{
+    if (strcmp(_searchQuery.GetString(), query) == 0)
+        return;
+    _searchQuery = query;
+    _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+}
+
+static bool BuildFavoritePath(char* path, size_t pathSize, const char* folder, const char* fileName)
+{
+    if (!folder || !fileName)
+        return false;
+    StringUtil::Copy(path, folder, pathSize);
+    size_t length = strlen(path);
+    if (length + 1 >= pathSize)
+        return false;
+    if (length == 0 || path[length - 1] != '/')
+        path[length++] = '/';
+    path[length] = 0;
+    if (strlen(fileName) >= pathSize - length)
+        return false;
+    strlcat(path, fileName, pathSize);
+    return true;
+}
+
+bool RomBrowserController::IsFavorite(const FileInfo& fileInfo) const
+{
+    char path[512];
+    if (!BuildFavoritePath(path, sizeof(path), _currentFolderPath.GetString(), fileInfo.GetFileName()) || strlen(path) > 256)
+        return false;
+    const auto& favorites = _appSettingsService->GetAppSettings().favoritePaths;
+    for (const auto& favorite : favorites)
+        if (!strcasecmp(favorite.GetString(), path))
+            return true;
+    return false;
+}
+
+void RomBrowserController::ToggleFavorite(const FileInfo& fileInfo)
+{
+    char path[512];
+    if (!BuildFavoritePath(path, sizeof(path), _currentFolderPath.GetString(), fileInfo.GetFileName()) || strlen(path) > 256)
+        return;
+    auto& favorites = _appSettingsService->GetAppSettings().favoritePaths;
+    for (auto it = favorites.begin(); it != favorites.end(); ++it)
+    {
+        if (!strcasecmp(it->GetString(), path))
+        {
+            favorites.erase(it);
+            _appSettingsService->Save();
+            if (_favoritesView) _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+            return;
+        }
+    }
+    if (favorites.size() < 10)
+        favorites.emplace_back(path);
+    _appSettingsService->Save();
+    if (_favoritesView) _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+}
+
+void RomBrowserController::ToggleFavoritesView()
+{
+    _favoritesView = !_favoritesView;
+    _stateMachine.Fire(RomBrowserStateTrigger::ChangeDisplayMode);
+}
+
 void RomBrowserController::SetRomBrowserDisplaySettings(
     const RomBrowserDisplaySettings& romBrowserDisplaySettings)
 {
@@ -202,6 +267,9 @@ void RomBrowserController::HandleNavigateTrigger()
             }
         }
         f_chdir(_navigatePath);
+        TCHAR currentFolderPath[257];
+        if (f_getcwd(currentFolderPath, sizeof(currentFolderPath)) == FR_OK)
+            _currentFolderPath = currentFolderPath;
         SdFolderFactory sdFolderFactory { &_fileTypeProvider };
         _newSdFolder = sdFolderFactory.CreateFromPath(".");
         u64 endTick = gTickCounter.GetValue();

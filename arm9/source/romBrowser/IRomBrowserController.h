@@ -26,6 +26,15 @@ public:
     virtual void HideDisplaySettings() = 0;
     virtual void GotoSettingsScreen() = 0;
     virtual void RestartForLanguageChange() = 0;
+    virtual void SetSearchQuery(const char* query) = 0;
+    virtual const char* GetSearchQuery() const = 0;
+    virtual bool IsFavorite(const FileInfo& fileInfo) const = 0;
+    virtual void ToggleFavorite(const FileInfo& fileInfo) = 0;
+    virtual bool IsFavoritesView() const = 0;
+    virtual void ToggleFavoritesView() = 0;
+    virtual void ShowSearch() = 0;
+    virtual bool ConsumeSearchRequest() = 0;
+    virtual const char* GetLanguage() const = 0;
 
     virtual void Update() = 0;
 

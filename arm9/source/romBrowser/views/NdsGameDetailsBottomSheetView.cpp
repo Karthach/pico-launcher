@@ -21,7 +21,7 @@ NdsGameDetailsBottomSheetView::NdsGameDetailsBottomSheetView(
     _cheatsChip->SetSelected(false);
     AddChildTail(_cheatsChip.GetPointer());
     _favoriteChip->SetText(localizationService.GetString("game_details_favorite"));
-    _favoriteChip->SetSelected(true);
+    _favoriteChip->SetSelected(_romBrowserController->IsFavorite(_romBrowserController->GetTriggerFileInfo()));
     AddChildTail(_favoriteChip.GetPointer());
 }
 
@@ -72,12 +72,33 @@ SharedPtr<View> NdsGameDetailsBottomSheetView::MoveFocus(const SharedPtr<View>& 
 
 bool NdsGameDetailsBottomSheetView::HandleInput(const InputProvider& inputProvider, FocusManager& focusManager)
 {
+    if (inputProvider.Triggered(InputKey::A) && focusManager.GetCurrentFocus().GetPointer() == _favoriteChip.GetPointer())
+    {
+        _romBrowserController->ToggleFavorite(_romBrowserController->GetTriggerFileInfo());
+        _favoriteChip->SetSelected(_romBrowserController->IsFavorite(_romBrowserController->GetTriggerFileInfo()));
+        return true;
+    }
     if (inputProvider.Triggered(InputKey::B))
     {
         _romBrowserController->HideGameInfo();
         return true;
     }
     return false;
+}
+
+void NdsGameDetailsBottomSheetView::HandlePenDown(const Point& touchPoint, FocusManager& focusManager)
+{
+    BottomSheetView::HandlePenDown(touchPoint, focusManager);
+}
+
+void NdsGameDetailsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
+{
+    BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
+    if (_favoriteChip->GetBounds().Contains(lastTouchPoint))
+    {
+        _romBrowserController->ToggleFavorite(_romBrowserController->GetTriggerFileInfo());
+        _favoriteChip->SetSelected(_romBrowserController->IsFavorite(_romBrowserController->GetTriggerFileInfo()));
+    }
 }
 
 void NdsGameDetailsBottomSheetView::Close()
