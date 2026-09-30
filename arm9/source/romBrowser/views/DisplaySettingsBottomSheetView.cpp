@@ -7,6 +7,7 @@
 #include "hGridIcon.h"
 #include "vGridIcon.h"
 #include "bannerListIcon.h"
+#include "coverflowIcon.h"
 #include "listIcon.h"
 #include "sortNameAscendingIcon.h"
 #include "sortNameDescendingIcon.h"
@@ -57,7 +58,8 @@ static RomBrowserLayout sRomBrowserDisplayModes[] =
 {
     RomBrowserLayout::HorizontalIconGrid,
     RomBrowserLayout::VerticalIconGrid,
-    RomBrowserLayout::BannerList
+    RomBrowserLayout::BannerList,
+    RomBrowserLayout::CoverFlow
 };
 
 static RomBrowserSortMode sRomBrowserSortModes[5] =
@@ -197,6 +199,7 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _layoutOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, hGridIconTiles, hGridIconTilesLen));
         _layoutOptions[1]->SetIconVramOffset(LoadIcon(*objVramManager, vGridIconTiles, vGridIconTilesLen));
         _layoutOptions[2]->SetIconVramOffset(LoadIcon(*objVramManager, bannerListIconTiles, bannerListIconTilesLen));
+        _layoutOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, coverflowIconTiles, coverflowIconTilesLen));
 
         // sort options
         _sortOptions[0]->SetIconVramOffset(LoadIcon(*objVramManager, sortNameAscendingIconTiles, sortNameAscendingIconTilesLen));
@@ -263,7 +266,8 @@ void DisplaySettingsBottomSheetView::Update()
     const char* layoutKeys[] = {
         "layout_horizontal_icon_grid",
         "layout_vertical_icon_grid",
-        "layout_banner_list"
+        "layout_banner_list",
+        "layout_cover_flow"
     };
 
     int layoutIdx = 0;
@@ -371,6 +375,18 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         }
         graphicsContext.SetClipArea(GetBounds());
 
+        // OAM sprites ignore software clipping; cover the carousel icon's overflow.
+        const auto sheetColor = _materialColorScheme->GetColor(md::sys::color::surfaceContainerLow);
+        const u32 layoutMaskPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
+            GradientPalette(sheetColor, sheetColor), layoutClip.GetTop(), layoutClip.GetBottom());
+        auto layoutClipMasks = graphicsContext.GetOamManager().AllocOams(2);
+        OamBuilder::OamWithSize<64, 32>(LAYOUT_CONTAINER_X - 64,
+                _position.y + LAYOUT_OPTIONS_Y, _sortClipMaskVramOffset >> 7)
+            .WithPalette16(layoutMaskPaletteRow).WithPriority(1).Build(layoutClipMasks[0]);
+        OamBuilder::OamWithSize<64, 32>(LAYOUT_CONTAINER_X + LAYOUT_CONTAINER_WIDTH,
+                _position.y + LAYOUT_OPTIONS_Y, _sortClipMaskVramOffset >> 7)
+            .WithPalette16(layoutMaskPaletteRow).WithPriority(1).Build(layoutClipMasks[1]);
+
         Rectangle sortClip(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
             SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
         graphicsContext.SetClipArea(sortClip);
@@ -382,7 +398,6 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 
         // DS OAM sprites do not respect the software clip rectangle. Mask the
         // overflow with the panel color, leaving partially visible edge icons.
-        const auto sheetColor = _materialColorScheme->GetColor(md::sys::color::surfaceContainerLow);
         const u32 maskPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
             GradientPalette(sheetColor, sheetColor), sortClip.GetTop(), sortClip.GetBottom());
         auto sortClipMasks = graphicsContext.GetOamManager().AllocOams(2);

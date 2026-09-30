@@ -2,6 +2,7 @@
 #include "RomBrowserHorizontalIconGridDisplayMode.h"
 #include "RomBrowserVerticalIconGridDisplayMode.h"
 #include "RomBrowserBannerListDisplayMode.h"
+#include "RomBrowserHorizontalCoverFlowDisplayMode.h"
 #include "RomBrowserDisplayModeFactory.h"
 
 const RomBrowserDisplayMode* RomBrowserDisplayModeFactory::GetRomBrowserDisplayMode(
@@ -23,6 +24,9 @@ const RomBrowserDisplayMode* RomBrowserDisplayModeFactory::GetRomBrowserDisplayM
             return &RomBrowserBannerListDisplayMode::sInstance;
         }
         case RomBrowserLayout::CoverFlow:
+        {
+            return &RomBrowserHorizontalCoverFlowDisplayMode::sInstance;
+        }
         case RomBrowserLayout::InvertedCoverFlow:
         {
             // Migrate legacy carousel settings to a supported layout.
