@@ -1,5 +1,6 @@
 #pragma once
 #include "../IRomBrowserController.h"
+#include "services/localization/ILocalizationService.h"
 #include "services/settings/RomBrowserDisplaySettings.h"
 
 #include "services/settings/IAppSettingsService.h"
@@ -8,9 +9,11 @@
 class DisplaySettingsViewModel
 {
 public:
-    DisplaySettingsViewModel(IRomBrowserController* romBrowserController, IAppSettingsService* appSettingsService)
+    DisplaySettingsViewModel(IRomBrowserController* romBrowserController, IAppSettingsService* appSettingsService,
+        ILocalizationService* localizationService)
         : _romBrowserController(romBrowserController)
         , _appSettingsService(appSettingsService)
+        , _localizationService(localizationService)
         , _romBrowserDisplaySettings(_romBrowserController->GetRomBrowserDisplaySettings()) { }
 
     constexpr RomBrowserLayout GetRomBrowserDisplayMode() const
@@ -52,6 +55,7 @@ public:
         {
             _appSettingsService->GetAppSettings().language = language;
             _appSettingsService->Save();
+            _localizationService->Reload();
             _romBrowserController->RestartForLanguageChange();
         }
     }
@@ -61,8 +65,14 @@ public:
         _romBrowserController->HideDisplaySettings();
     }
 
+    void GotoSettingsScreen()
+    {
+        _romBrowserController->GotoSettingsScreen();
+    }
+
 private:
     IRomBrowserController* _romBrowserController;
     IAppSettingsService* _appSettingsService;
+    ILocalizationService* _localizationService;
     RomBrowserDisplaySettings _romBrowserDisplaySettings;
 };

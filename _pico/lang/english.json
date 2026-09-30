@@ -13,7 +13,13 @@
   "layout_banner_list": "Banner List",
   "layout_cover_flow": "Cover Flow",
   "layout_inverted_cover_flow": "Inverted Cover Flow",
-  "sort_name_ascending": "Name: A to Z",
-  "sort_name_descending": "Name: Z to A",
-  "sort_title_ascending": "Game title: A to Z"
+  "sort_name_ascending": "File name: A to Z",
+  "sort_name_descending": "File name: Z to A",
+  "sort_title_ascending": "Game title: A to Z",
+  "sort_title_descending": "Game title: Z to A",
+  "sort_last_modified": "Modified: newest first",
+  "theme_list_empty": "No themes installed.",
+  "theme_preview_select": "Select a theme to preview.",
+  "theme_preview_unavailable": "Preview not available.",
+  "theme_preview_loading": "Loading preview..."
 }

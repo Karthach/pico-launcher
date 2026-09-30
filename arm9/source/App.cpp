@@ -49,7 +49,7 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILoca
         InputKey::DpadLeft | InputKey::DpadRight | InputKey::DpadUp | InputKey::DpadDown | InputKey::L | InputKey::R,
         25, 8)
     , _romBrowserController(&appSettingsService, &_ioTaskQueue, &_bgTaskQueue)
-    , _displaySettingsBottomSheetViewModel(&_romBrowserController, &appSettingsService)
+    , _displaySettingsBottomSheetViewModel(&_romBrowserController, &appSettingsService, &localizationService)
     , _romBrowserBottomScreenViewModel(&_romBrowserController)
     , _dialogPresenter(&_focusManager, &_mainObjDialogVram) { }
 

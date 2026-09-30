@@ -12,9 +12,19 @@
 #define MAX_LOCALIZATION_JSON_SIZE 8192
 
 JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSettingsService)
+    : _appSettingsService(appSettingsService)
 {
+    Reload();
+}
+
+void JsonLocalizationService::Reload()
+{
+    const char* language = _appSettingsService.GetAppSettings().language.GetString();
+    if (_stringCount > 0 && strcmp(_loadedLanguage.GetString(), language) == 0)
+        return;
+
     char langPath[128];
-    snprintf(langPath, sizeof(langPath), "/_pico/lang/%s.json", appSettingsService.GetAppSettings().language.GetString());
+    snprintf(langPath, sizeof(langPath), "/_pico/lang/%s.json", language);
 
     LOG_DEBUG("Loading language: %s\n", langPath);
 
@@ -58,6 +68,13 @@ JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSetting
     }
 
     LOG_DEBUG("JSON parsed. Building map...\n");
+    for (u32 i = 0; i < _stringCount; i++)
+    {
+        _strings[i].key = "";
+        _strings[i].value.reset();
+    }
+    _stringCount = 0;
+
     JsonObject root = json.as<JsonObject>();
     for (JsonPair it : root)
     {
@@ -76,6 +93,7 @@ JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSetting
         _stringCount++;
     }
     
+    _loadedLanguage = language;
     LOG_DEBUG("Loaded %d strings\n", _stringCount);
 }
 
@@ -85,7 +103,7 @@ const char16_t* JsonLocalizationService::GetString(const char* key) const
     {
         if (!strcmp(_strings[i].key.GetString(), key))
         {
-            return _strings[i].value.get();
+            return _strings[i].value ? _strings[i].value.get() : u"";
         }
     }
     return u"";

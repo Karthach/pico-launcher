@@ -3,7 +3,6 @@
 #include "RomBrowserVerticalIconGridDisplayMode.h"
 #include "RomBrowserBannerListDisplayMode.h"
 #include "RomBrowserHorizontalCoverFlowDisplayMode.h"
-#include "RomBrowserInvertedCoverFlowDisplayMode.h"
 #include "RomBrowserDisplayModeFactory.h"
 
 const RomBrowserDisplayMode* RomBrowserDisplayModeFactory::GetRomBrowserDisplayMode(
@@ -20,6 +19,7 @@ const RomBrowserDisplayMode* RomBrowserDisplayModeFactory::GetRomBrowserDisplayM
             return &RomBrowserVerticalIconGridDisplayMode::sInstance;
         }
         case RomBrowserLayout::BannerList:
+        case RomBrowserLayout::FileList:
         {
             return &RomBrowserBannerListDisplayMode::sInstance;
         }
@@ -29,7 +29,8 @@ const RomBrowserDisplayMode* RomBrowserDisplayModeFactory::GetRomBrowserDisplayM
         }
         case RomBrowserLayout::InvertedCoverFlow:
         {
-            return &RomBrowserInvertedCoverFlowDisplayMode::sInstance;
+            // Migrate legacy carousel settings to a supported layout.
+            return &RomBrowserBannerListDisplayMode::sInstance;
         }
         default:
         {

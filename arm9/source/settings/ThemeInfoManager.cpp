@@ -82,5 +82,6 @@ void ThemeInfoManager::LoadThemePreviewImage(SharedPtr<ExtraThemeInfo>& extraThe
         memset(extraThemeInfo->previewImage, 0, 256 * 192 * 2);
     }
 
+    extraThemeInfo->hasPreview = previewOk;
     DC_FlushRange(extraThemeInfo->previewImage, 256 * 192 * 2);
 }

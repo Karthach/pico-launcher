@@ -1,12 +1,14 @@
 #include "common.h"
 #include "gui/input/InputProvider.h"
+#include "services/localization/ILocalizationService.h"
 #include "themes/IFontRepository.h"
 #include "themes/material/MaterialColorScheme.h"
 #include "ThemeListBottomView.h"
 
 ThemeListBottomView::ThemeListBottomView(SharedPtr<ThemeListViewModel> viewModel, const MaterialColorScheme* materialColorScheme,
     const IRomBrowserViewFactory* romBrowserViewFactory, const IThemeFileIconFactory* themeFileIconFactory,
-    VBlankTextureLoader* vblankTextureLoader, const IFontRepository* fontRepository)
+    VBlankTextureLoader* vblankTextureLoader, const IFontRepository* fontRepository,
+    ILocalizationService& localizationService)
     : _appBarView(SettingsAppBarView::CreateShared(viewModel, romBrowserViewFactory))
     , _recyclerView(RecyclerView::CreateShared(42, 0, 256 - 42, 192, RecyclerView::Mode::VerticalList))
     , _viewModel(std::move(viewModel))
@@ -21,7 +23,7 @@ ThemeListBottomView::ThemeListBottomView(SharedPtr<ThemeListViewModel> viewModel
     {
         _emptyStateLabel = Label2DView::CreateShared(208, 32, 25, fontRepository->GetFont(FontType::Regular10));
         _emptyStateLabel->SetHorizontalAlignment(Alignment::Center);
-        _emptyStateLabel->SetText(u"No themes found / Sin temas");
+        _emptyStateLabel->SetText(localizationService.GetString("theme_list_empty"));
         _emptyStateLabel->SetPosition(44, 80);
         _emptyStateLabel->SetBackgroundColor(materialColorScheme->inverseOnSurface);
         _emptyStateLabel->SetForegroundColor(materialColorScheme->onSurfaceVariant);

@@ -9,8 +9,13 @@ static int CompareTitleStrings(const char16_t* a, const char16_t* b)
     if (a == b) return 0;
     if (!a) return 1;
     if (!b) return -1;
-    while (*a && (*a == *b))
+    while (*a && *b)
     {
+        char16_t charA = *a;
+        char16_t charB = *b;
+        if (charA >= u'A' && charA <= u'Z') charA += u'a' - u'A';
+        if (charB >= u'A' && charB <= u'Z') charB += u'a' - u'A';
+        if (charA != charB) return (int)charA - (int)charB;
         a++;
         b++;
     }
@@ -83,11 +88,16 @@ std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
 
                 int cmp = CompareTitleStrings(a.title.get(), b.title.get());
                 if (cmp == 0)
-                    result = CompareName(a.fileInfo, b.fileInfo);
-                else
-                    result = cmp < 0;
+                {
+                    if (CompareName(a.fileInfo, b.fileInfo))
+                        cmp = -1;
+                    else if (CompareName(b.fileInfo, a.fileInfo))
+                        cmp = 1;
+                }
 
-                return filterSortParams.sortDirection == SdFolderSortDirection::Ascending ? result : !result;
+                return filterSortParams.sortDirection == SdFolderSortDirection::Ascending
+                    ? cmp < 0
+                    : cmp > 0;
             });
 
         for (int i = 0; i < filteredCount; i++)
@@ -113,16 +123,43 @@ std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
                         sortDirection = SdFolderSortDirection::Ascending;
                     }
                 }
+                int cmp = 0;
                 switch (sortType)
                 {
                     case SdFolderSortType::Name:
+                    {
+                        if (CompareName(a, b))
+                            cmp = -1;
+                        else if (CompareName(b, a))
+                            cmp = 1;
+                        break;
+                    }
+                    case SdFolderSortType::LastModified:
+                    {
+                        u32 aTimestamp = a->GetFastFileRef().GetLastModifiedTimestamp();
+                        u32 bTimestamp = b->GetFastFileRef().GetLastModifiedTimestamp();
+                        if (aTimestamp < bTimestamp)
+                            cmp = -1;
+                        else if (aTimestamp > bTimestamp)
+                            cmp = 1;
+                        else if (CompareName(a, b))
+                            cmp = -1;
+                        else if (CompareName(b, a))
+                            cmp = 1;
+                        break;
+                    }
                     default:
                     {
-                        result = CompareName(a, b);
+                        if (CompareName(a, b))
+                            cmp = -1;
+                        else if (CompareName(b, a))
+                            cmp = 1;
                         break;
                     }
                 }
-                return sortDirection == SdFolderSortDirection::Ascending ? result : !result;
+                return sortDirection == SdFolderSortDirection::Ascending
+                    ? cmp < 0
+                    : cmp > 0;
             });
     }
     resultCount = filteredCount;
