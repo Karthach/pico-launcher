@@ -386,7 +386,7 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         const u32 maskPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
             GradientPalette(sheetColor, sheetColor), sortClip.GetTop(), sortClip.GetBottom());
         auto sortClipMasks = graphicsContext.GetOamManager().AllocOams(2);
-        const u32 oldMaskPriority = graphicsContext.SetPriority(0);
+        const u32 oldMaskPriority = graphicsContext.SetPriority(1);
         OamBuilder::OamWithSize<64, 32>(
                 SORTING_OPTIONS_X - 64, _position.y + SORTING_OPTIONS_Y, _sortClipMaskVramOffset >> 7)
             .WithPalette16(maskPaletteRow)
@@ -406,7 +406,7 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         }
 
         // Keep the selected sort mode above the game list drawn underneath.
-        graphicsContext.SetPriority(0);
+        graphicsContext.SetPriority(1);
         _sortingNameLabel->Draw(graphicsContext);
         graphicsContext.SetPriority(1);
     }
