@@ -46,6 +46,7 @@
 #define SORTING_OPTIONS_X   120
 #define SORTING_OPTIONS_WIDTH 110
 #define SORTING_OPTIONS_HEIGHT 32
+#define SORTING_ICON_DRAW_WIDTH 35
 
 #define LANGUAGE_LABEL_X     20
 #define LANGUAGE_LABEL_Y     135
@@ -67,6 +68,14 @@ static RomBrowserSortMode sRomBrowserSortModes[5] =
     [4] = RomBrowserSortMode::LastModified
 };
 
+static bool IsSortOptionFullyVisible(const IconButton2DView& sortOption, const Rectangle& clip)
+{
+    const Rectangle bounds = sortOption.GetBounds();
+    // The selector sprite is 32 px wide and starts 3 px inside the button bounds.
+    return clip.Contains(bounds)
+        && bounds.GetRight() + (SORTING_ICON_DRAW_WIDTH - 32) <= clip.GetRight();
+}
+
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     DisplaySettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
     const IFontRepository* fontRepository, ILocalizationService& localizationService)
@@ -77,7 +86,7 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _layoutLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _layoutNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
-    , _sortingNameLabel(Label2DView::CreateShared(200, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
+    , _sortingNameLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium7_5)))
     , _languageLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
@@ -94,7 +103,6 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     AddChildTail(_layoutNameLabel.GetPointer());
     _sortingLabel->SetText(_localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
-    AddChildTail(_sortingNameLabel.GetPointer());
     _languageLabel->SetText(_localizationService.GetString("language_settings_title"));
     AddChildTail(_languageLabel.GetPointer());
 
@@ -181,6 +189,7 @@ SharedPtr<ChipView> DisplaySettingsBottomSheetView::CreateLanguageOptionChip()
 void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
 {
     BottomSheetView::InitVram(vramContext);
+    _sortingNameLabel->InitVram(vramContext);
 
     const auto objVramManager = vramContext.GetObjVramManager();
     if (objVramManager)
@@ -199,9 +208,6 @@ void DisplaySettingsBottomSheetView::InitVram(const VramContext& vramContext)
         _sortOptions[3]->SetIconVramOffset(LoadIcon(*objVramManager, gamesIconTiles, gamesIconTilesLen));
         _sortOptions[4]->SetIconVramOffset(LoadIcon(*objVramManager, recentIconTiles, recentIconTilesLen));
     }
-
-    _layoutNameLabel->InitVram(vramContext);
-    _sortingNameLabel->InitVram(vramContext);
 
     for (auto& layoutOption : _layoutOptions)
     {
@@ -232,7 +238,8 @@ void DisplaySettingsBottomSheetView::UpdateLabels()
 
 void DisplaySettingsBottomSheetView::ClampSortScroll()
 {
-    const int minScrollX = SORTING_OPTIONS_WIDTH - (int)_sortOptions.size() * 32;
+    const int minScrollX = SORTING_OPTIONS_WIDTH
+        - ((int)_sortOptions.size() - 1) * 32 - SORTING_ICON_DRAW_WIDTH;
     if (_sortScrollX > 0) _sortScrollX = 0;
     if (_sortScrollX < minScrollX) _sortScrollX = minScrollX;
 }
@@ -242,8 +249,9 @@ void DisplaySettingsBottomSheetView::EnsureSortOptionVisible(u32 index)
     const int optionX = 120 + _sortScrollX + (int)index * 32;
     if (optionX < 120)
         _sortScrollX += 120 - optionX;
-    else if (optionX + 32 > 120 + SORTING_OPTIONS_WIDTH)
-        _sortScrollX -= optionX + 32 - (120 + SORTING_OPTIONS_WIDTH);
+    else if (optionX + SORTING_ICON_DRAW_WIDTH > SORTING_OPTIONS_X + SORTING_OPTIONS_WIDTH)
+        _sortScrollX -= optionX + SORTING_ICON_DRAW_WIDTH
+            - (SORTING_OPTIONS_X + SORTING_OPTIONS_WIDTH);
     ClampSortScroll();
     _isManualSortScroll = true;
 }
@@ -370,7 +378,8 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         graphicsContext.SetClipArea(sortClip);
         for (auto& sortOption : _sortOptions)
         {
-            sortOption->Draw(graphicsContext);
+            if (IsSortOptionFullyVisible(*sortOption, sortClip))
+                sortOption->Draw(graphicsContext);
         }
         graphicsContext.SetClipArea(GetBounds());
 
@@ -378,6 +387,11 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         {
             langOption->Draw(graphicsContext);
         }
+
+        // Draw above the game list sprites underneath the settings sheet.
+        graphicsContext.SetPriority(0);
+        _sortingNameLabel->Draw(graphicsContext);
+        graphicsContext.SetPriority(1);
     }
     graphicsContext.SetPriority(oldPrio);
     graphicsContext.ResetClipArea();
@@ -386,6 +400,7 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 void DisplaySettingsBottomSheetView::VBlank()
 {
     BottomSheetView::VBlank();
+    _sortingNameLabel->VBlank();
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->VBlank();
@@ -460,11 +475,11 @@ void DisplaySettingsBottomSheetView::HandlePenDown(const Point& touchPoint, Focu
         _lastSortTouchPoint = touchPoint;
     }
 
-    // The sprites are not hardware-clipped at the scroll viewport edge. Keep the
-    // visible part of a partially exposed button selectable at that edge too.
+    // Only fully visible buttons receive touch input, matching the draw pass.
     for (auto& sortOption : _sortOptions)
     {
-        if (sortOption->GetBounds().Contains(touchPoint))
+        if (IsSortOptionFullyVisible(*sortOption, sortRect)
+            && sortOption->GetBounds().Contains(touchPoint))
         {
             sortOption->HandlePenDown(touchPoint, focusManager);
         }
@@ -504,9 +519,12 @@ void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, Fo
     {
         layoutOption->HandlePenUp(lastTouchPoint, focusManager);
     }
+    Rectangle sortRect(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
+        SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
     for (auto& sortOption : _sortOptions)
     {
-        sortOption->HandlePenUp(lastTouchPoint, focusManager);
+        sortOption->HandlePenUp(IsSortOptionFullyVisible(*sortOption, sortRect)
+            ? lastTouchPoint : Point(-1, -1), focusManager);
     }
     _isDraggingSort = false;
 }
