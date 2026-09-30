@@ -530,6 +530,8 @@ void DisplaySettingsBottomSheetView::HandlePenMove(const Point& touchPoint, Focu
 void DisplaySettingsBottomSheetView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager)
 {
     BottomSheetView::HandlePenUp(lastTouchPoint, focusManager);
+    const Rectangle sortRect(SORTING_OPTIONS_X, _position.y + SORTING_OPTIONS_Y,
+        SORTING_OPTIONS_WIDTH, SORTING_OPTIONS_HEIGHT);
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->HandlePenUp(lastTouchPoint, focusManager);
