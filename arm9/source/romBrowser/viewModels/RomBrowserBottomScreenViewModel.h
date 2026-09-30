@@ -34,6 +34,8 @@ public:
         return &_romBrowserAppBarViewModel;
     }
 
+    IRomBrowserController* GetRomBrowserController() const { return _romBrowserController; }
+
     void NavigateUp()
     {
         _romBrowserController->NavigateUp();

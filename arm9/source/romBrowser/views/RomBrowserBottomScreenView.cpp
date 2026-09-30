@@ -279,7 +279,7 @@ void RomBrowserBottomScreenView::UpdateSearchKeyboard()
         _searchKeys[i]->SetText((spanish ? controlsEs : controlsEn)[i - 26]);
     _searchText->SetText(_pendingSearch[0] ? _pendingSearch : (spanish ? "Buscar..." : "Search..."));
     _searchText->SetPosition(16, 24);
-    _searchText->SetBackgroundColor(_materialColorScheme->surfaceContainerLow);
+    _searchText->SetBackgroundColor(_materialColorScheme->GetColor(md::sys::color::surfaceContainerLow));
     _searchText->SetForegroundColor(_materialColorScheme->primary);
     for (int i = 0; i < (int)_searchKeys.size(); i++)
     {
