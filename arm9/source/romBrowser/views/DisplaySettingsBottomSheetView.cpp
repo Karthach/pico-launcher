@@ -98,6 +98,7 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     AddChildTail(_layoutNameLabel.GetPointer());
     _sortingLabel->SetText(_localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
+    AddChildTail(_sortingNameLabel.GetPointer());
     _languageLabel->SetText(_localizationService.GetString("language_settings_title"));
     AddChildTail(_languageLabel.GetPointer());
 
@@ -420,10 +421,6 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
             langOption->Draw(graphicsContext);
         }
 
-        // Keep the selected sort mode above the game list drawn underneath.
-        graphicsContext.SetPriority(1);
-        _sortingNameLabel->Draw(graphicsContext);
-        graphicsContext.SetPriority(1);
     }
     graphicsContext.SetPriority(oldPrio);
     graphicsContext.ResetClipArea();
@@ -432,7 +429,6 @@ void DisplaySettingsBottomSheetView::Draw(GraphicsContext& graphicsContext)
 void DisplaySettingsBottomSheetView::VBlank()
 {
     BottomSheetView::VBlank();
-    _sortingNameLabel->VBlank();
     for (auto& layoutOption : _layoutOptions)
     {
         layoutOption->VBlank();
