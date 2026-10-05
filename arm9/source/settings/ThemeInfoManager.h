@@ -11,6 +11,7 @@ public:
     struct alignas(32) ExtraThemeInfo
     {
         u16 previewImage[256 * 192];
+        bool hasPreview = false;
         std::unique_ptr<ThemeInfo> themeInfo;
         SharedPtr<BmpFileIconData> iconData;
     };
