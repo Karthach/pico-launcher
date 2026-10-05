@@ -6,6 +6,7 @@
 
 class MaterialColorScheme;
 class IFontRepository;
+class ILocalizationService;
 
 /// @brief Confirmation sheet before deleting something from the SD card: a game
 ///        and its save, or a theme. X confirms; A and B cancel - A is the launch
@@ -30,10 +31,12 @@ private:
     SharedPtr<Label2DView> _saveLabel;
     SharedPtr<Label2DView> _hintLabel;
     const MaterialColorScheme* _materialColorScheme;
+    ILocalizationService& _localizationService;
     const char* _shownStatus = nullptr;
     bool _hasDetail = false;
     bool _confirmed = false;
 
     DeleteConfirmBottomSheetView(SharedPtr<IDeleteConfirmViewModel> viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 };

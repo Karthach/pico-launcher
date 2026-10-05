@@ -18,6 +18,8 @@
 #include "checkIcon.h"
 #include "infoIcon.h"
 #include "MenuBottomSheetView.h"
+#include "services/localization/ILocalizationService.h"
+#include "unknownIcon.h"
 
 // Placed from the sheet's top edge, which rests at y 32 once the sheet is open.
 #define TITLE_X             20
@@ -35,7 +37,7 @@
 #define CELL_WIDTH          112
 #define ROW_WIDTH           224
 #define ROWS_Y              40
-#define ROW_SPACING         26
+#define ROW_SPACING         22
 
 // Inside an item.
 #define ICON_DX             4
@@ -54,7 +56,7 @@
 static const Rgb<8, 8, 8> kFavoriteRed(214, 40, 57);
 static const Rgb<8, 8, 8> kCompletedGreen(67, 160, 71);
 
-MenuItemView::MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char* name,
+MenuItemView::MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char16_t* name,
     bool hasState, const Rgb<8, 8, 8>& activeColor,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
     : _sheet(sheet), _index(index), _width(width), _activeColor(activeColor)
@@ -69,7 +71,7 @@ MenuItemView::MenuItemView(MenuBottomSheetView* sheet, int index, int width, con
     {
         _stateLabel = Label2DView::CreateShared(STATE_WIDTH, 16, 4, fontRepository->GetFont(FontType::Medium7_5));
         _stateLabel->SetHorizontalAlignment(Alignment::End);
-        _stateLabel->SetText("off");
+        _stateLabel->SetText(u"off");
         AddChildTail(_stateLabel.GetPointer());
     }
 }
@@ -176,12 +178,14 @@ void MenuItemView::HandlePenUp(const Point& lastTouchPoint, FocusManager& focusM
 }
 
 MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
-    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
+    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+    ILocalizationService& localizationService)
     : _viewModel(std::move(viewModel))
     , _materialColorScheme(materialColorScheme)
+    , _localizationService(localizationService)
 {
     _titleLabel = Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11));
-    _titleLabel->SetText("Menu");
+    _titleLabel->SetText(_localizationService.GetString("menu_title"));
     AddChildTail(_titleLabel.GetPointer());
 
     _aboutButton = IconButton2DView::CreateShared(
@@ -195,19 +199,21 @@ MenuBottomSheetView::MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
     }, this);
     AddChildTail(_aboutButton.GetPointer());
 
-    static const struct { const char* name; bool filter; } kEntries[ITEM_COUNT] =
+    static const struct { const char* key; bool filter; } kEntries[ITEM_COUNT] =
     {
-        { "Recently played", false },
-        { "Favorites", false },
-        { "Statistics", false },
-        { "Delete game", false },
-        { "Only favorites", true },
-        { "Only completed", true }
+        { "menu_recently_played", false },
+        { "menu_favorites", false },
+        { "menu_statistics", false },
+        { "menu_delete_game", false },
+        { "menu_only_favorites", true },
+        { "menu_only_completed", true },
+        { "menu_language", true }
     };
     for (int i = 0; i < ITEM_COUNT; i++)
     {
         _items[i] = MenuItemView::CreateShared(this, i, kEntries[i].filter ? ROW_WIDTH : CELL_WIDTH,
-            kEntries[i].name, kEntries[i].filter, i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
+            _localizationService.GetString(kEntries[i].key), kEntries[i].filter,
+            i == ITEM_COMPLETED_FILTER ? kCompletedGreen : kFavoriteRed,
             materialColorScheme, fontRepository);
         AddChildTail(_items[i].GetPointer());
     }
@@ -221,9 +227,9 @@ void MenuBottomSheetView::InitVram(const VramContext& vramContext)
     if (!objVramManager)
         return;
     static const unsigned int* const kTiles[ITEM_COUNT] =
-        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, heartIconTiles, checkIconTiles };
+        { recentIconTiles, smallHeartIconFilledTiles, statsIconTiles, trashIconTiles, heartIconTiles, checkIconTiles, unknownIconTiles };
     static const u32 kTilesLength[ITEM_COUNT] =
-        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, heartIconTilesLen, checkIconTilesLen };
+        { recentIconTilesLen, smallHeartIconFilledTilesLen, statsIconTilesLen, trashIconTilesLen, heartIconTilesLen, checkIconTilesLen, unknownIconTilesLen };
     _aboutButton->SetIconVramOffset(LoadSprite(*objVramManager, infoIconTiles, infoIconTilesLen));
     u32 selectorVramOffset = LoadSprite(*objVramManager, cheatSelectorTiles, cheatSelectorTilesLen);
     for (int i = 0; i < ITEM_COUNT; i++)
@@ -256,6 +262,11 @@ void MenuBottomSheetView::Update()
     _items[ITEM_DELETE]->SetEnabled(_viewModel->CanDeleteSelected());
     _items[ITEM_FAVORITES_FILTER]->SetActive(_viewModel->IsFavoritesFilterEnabled());
     _items[ITEM_COMPLETED_FILTER]->SetActive(_viewModel->IsCompletedFilterEnabled());
+    _items[ITEM_FAVORITES_FILTER]->SetStateText(_localizationService.GetString(
+        _viewModel->IsFavoritesFilterEnabled() ? "menu_on" : "menu_off"));
+    _items[ITEM_COMPLETED_FILTER]->SetStateText(_localizationService.GetString(
+        _viewModel->IsCompletedFilterEnabled() ? "menu_on" : "menu_off"));
+    _items[ITEM_LANGUAGE]->SetStateText(strcmp(_viewModel->GetLanguageCode(), "spanish") == 0 ? "ES" : "EN");
     BottomSheetView::Update();
 }
 
@@ -313,6 +324,8 @@ SharedPtr<View> MenuBottomSheetView::MoveFocus(const SharedPtr<View>& currentFoc
                 return _items[idx + 1];
             break;
         case FocusMoveDirection::Up:
+            if (idx == ITEM_LANGUAGE)
+                return _items[ITEM_COMPLETED_FILTER];
             if (idx == ITEM_COMPLETED_FILTER)
                 return _items[ITEM_FAVORITES_FILTER];
             if (idx == ITEM_FAVORITES_FILTER)
@@ -323,6 +336,8 @@ SharedPtr<View> MenuBottomSheetView::MoveFocus(const SharedPtr<View>& currentFoc
         case FocusMoveDirection::Down:
             if (idx == ITEM_FAVORITES_FILTER)
                 return _items[ITEM_COMPLETED_FILTER];
+            if (idx == ITEM_COMPLETED_FILTER)
+                return _items[ITEM_LANGUAGE];
             if (idx < 2)
                 return _items[idx + 2];
             if (cell)
@@ -364,6 +379,10 @@ void MenuBottomSheetView::Activate(int index)
             break;
         case ITEM_COMPLETED_FILTER:
             _viewModel->ToggleCompletedFilter();
+            break;
+        case ITEM_LANGUAGE:
+            _viewModel->ToggleLanguage();
+            _viewModel->Close();
             break;
     }
 }

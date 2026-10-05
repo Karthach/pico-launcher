@@ -7,6 +7,8 @@
 #include "gui/input/InputProvider.h"
 #include "gui/FocusManager.h"
 #include "DeleteConfirmBottomSheetView.h"
+#include "services/localization/ILocalizationService.h"
+#include "core/String.h"
 
 #define TITLE_LABEL_X       20
 #define TITLE_LABEL_Y       16
@@ -18,18 +20,18 @@
 
 #define LINE_WIDTH          216
 
-static const char* const kHint = "X: delete    A/B: cancel";
-
 DeleteConfirmBottomSheetView::DeleteConfirmBottomSheetView(SharedPtr<IDeleteConfirmViewModel> viewModel,
-    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
+    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+    ILocalizationService& localizationService)
     : _viewModel(std::move(viewModel))
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _fileNameLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 256, fontRepository->GetFont(FontType::Regular10)))
     , _saveLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 270, fontRepository->GetFont(FontType::Medium7_5)))
     , _hintLabel(Label2DView::CreateShared(LINE_WIDTH, 16, 40, fontRepository->GetFont(FontType::Medium7_5)))
     , _materialColorScheme(materialColorScheme)
+    , _localizationService(localizationService)
 {
-    _titleLabel->SetText(_viewModel->GetTitle());
+    _titleLabel->SetText(_localizationService.GetString(_viewModel->GetTitleKey()));
     _fileNameLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Marquee);
     if (const char16_t* name16 = _viewModel->GetNameLine16())
         _fileNameLabel->SetText(name16);
@@ -40,9 +42,32 @@ DeleteConfirmBottomSheetView::DeleteConfirmBottomSheetView(SharedPtr<IDeleteConf
     if (_hasDetail)
     {
         _saveLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
-        _saveLabel->SetText(detailLine);
+        const char* detailArgument = _viewModel->GetDetailArgument();
+        const char16_t* detailTemplate = _viewModel->GetDetailKey()
+            ? _localizationService.GetString(_viewModel->GetDetailKey()) : nullptr;
+        if (detailTemplate && detailArgument)
+        {
+            String<char16_t, 192> argument(detailArgument);
+            char16_t detail[256];
+            u32 out = 0;
+            for (u32 i = 0; detailTemplate[i] && out < 254;)
+            {
+                if (detailTemplate[i] == u'%' && detailTemplate[i + 1] == u's')
+                {
+                    for (u32 j = 0; argument.GetString()[j] && out < 254; j++)
+                        detail[out++] = argument.GetString()[j];
+                    i += 2;
+                }
+                else
+                    detail[out++] = detailTemplate[i++];
+            }
+            detail[out] = 0;
+            _saveLabel->SetText(detail);
+        }
+        else
+            _saveLabel->SetText(detailLine);
     }
-    _hintLabel->SetText(kHint);
+    _hintLabel->SetText(_localizationService.GetString("delete_hint"));
     AddChildTail(_titleLabel.GetPointer());
     AddChildTail(_fileNameLabel.GetPointer());
     if (_hasDetail)
@@ -59,7 +84,11 @@ void DeleteConfirmBottomSheetView::Update()
     if (status != nullptr && status != _shownStatus)
     {
         _shownStatus = status;
-        _hintLabel->SetText(status);
+        const char* statusKey = _viewModel->GetStatusKey();
+        if (statusKey)
+            _hintLabel->SetText(_localizationService.GetString(statusKey));
+        else
+            _hintLabel->SetText(status);
     }
     _titleLabel->SetPosition(TITLE_LABEL_X, _position.y + TITLE_LABEL_Y);
     _fileNameLabel->SetPosition(LINE_X, _position.y + FILE_NAME_Y);

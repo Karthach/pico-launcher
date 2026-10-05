@@ -10,6 +10,7 @@
 class MaterialColorScheme;
 class IFontRepository;
 class IVramManager;
+class ILocalizationService;
 
 /// @brief Bottom sheet listing the recently played games.
 class RecentsBottomSheetView : public BottomSheetView
@@ -35,13 +36,14 @@ private:
     SharedPtr<RecentsAdapter> _recentsAdapter;
     const MaterialColorScheme* _materialColorScheme;
     const IFontRepository* _fontRepository;
+    ILocalizationService& _localizationService;
     IVramManager* _objVramManager = nullptr;
     FocusManager* _focusManager;
     RecentListItemView::VramOffsets _vramOffsets;
 
     RecentsBottomSheetView(SharedPtr<RecentsViewModel> viewModel,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
-        FocusManager* focusManager);
+        FocusManager* focusManager, ILocalizationService& localizationService);
 
     u32 LoadSprite(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
 };

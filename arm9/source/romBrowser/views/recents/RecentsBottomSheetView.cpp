@@ -9,6 +9,7 @@
 #include "cheatSelector.h"
 #include "smallHeartIconFilled.h"
 #include "RecentsBottomSheetView.h"
+#include "services/localization/ILocalizationService.h"
 
 #define TITLE_LABEL_X               20
 #define TITLE_LABEL_Y               16
@@ -23,7 +24,7 @@
 
 RecentsBottomSheetView::RecentsBottomSheetView(SharedPtr<RecentsViewModel> viewModel,
     const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
-    FocusManager* focusManager)
+    FocusManager* focusManager, ILocalizationService& localizationService)
     : _viewModel(std::move(viewModel))
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _emptyLabel(Label2DView::CreateShared(192, 16, 32, fontRepository->GetFont(FontType::Regular10)))
@@ -31,17 +32,18 @@ RecentsBottomSheetView::RecentsBottomSheetView(SharedPtr<RecentsViewModel> viewM
         LIST_X, LIST_Y, LIST_WIDTH, LIST_HEIGHT, RecyclerView::Mode::VerticalList))
     , _materialColorScheme(materialColorScheme)
     , _fontRepository(fontRepository)
+    , _localizationService(localizationService)
     , _focusManager(focusManager)
 {
     if (_viewModel->GetKind() == GameListKind::Recents)
     {
-        _titleLabel->SetText(u"Recent games");
-        _emptyLabel->SetText(u"Nothing played yet.");
+        _titleLabel->SetText(_localizationService.GetString("recents_title"));
+        _emptyLabel->SetText(_localizationService.GetString("recents_empty"));
     }
     else
     {
-        _titleLabel->SetText(u"Favorite games");
-        _emptyLabel->SetText(u"No favorites yet. Press X on a game.");
+        _titleLabel->SetText(_localizationService.GetString("favorites_title"));
+        _emptyLabel->SetText(_localizationService.GetString("favorites_empty"));
     }
     AddChildTail(_titleLabel.GetPointer());
     if (_viewModel->GetItemCount() == 0)

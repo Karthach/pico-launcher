@@ -13,6 +13,7 @@
 #include "rasalopaAvatar.h"
 #include "Version.h"
 #include "AboutBottomSheetView.h"
+#include "services/localization/ILocalizationService.h"
 
 // Placed from the sheet's top edge, which rests at y 32 once the sheet is
 // open. No title: the two columns say what the sheet is.
@@ -56,31 +57,35 @@
 
 // The controls that have no button on screen, in the order a new player meets
 // them. Kept in step with docs/Enhanced.md's table.
-static const struct { const char* button; const char* action; } kCommands[] =
+static const struct { const char* button; const char* key; } kCommands[] =
 {
-    { "X",        "favorite. hold: completed" },
-    { "Y",        "cheats for this game" },
-    { "L R",      "previous or next initial" },
-    { "SELECT+A", "random game in this folder" },
-    { "START",    "hold: save a screenshot" },
-    { "B",        "folder up, or close a panel" },
-    { "X",        "in cheats: every cheat off" },
+    { "X",        "about_control_favorite" },
+    { "Y",        "about_control_cheats" },
+    { "L R",      "about_control_initial" },
+    { "SELECT+A", "about_control_random" },
+    { "START",    "about_control_screenshot" },
+    { "B",        "about_control_back" },
+    { "X",        "about_control_cheat_off" },
 };
 static const int kCommandCount = sizeof(kCommands) / sizeof(kCommands[0]);
 
 AboutBottomSheetView::AboutBottomSheetView(SharedPtr<AboutViewModel> viewModel,
-    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
+    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+    ILocalizationService& localizationService)
     : _viewModel(std::move(viewModel))
     , _materialColorScheme(materialColorScheme)
+    , _localizationService(localizationService)
 {
     char text[96];
     _upstreamName = AddLabel(fontRepository, FontType::Medium10, COLUMN_WIDTH, 16, "Pico Launcher", Alignment::Center);
-    _upstreamBy = AddLabel(fontRepository, FontType::Regular10, COLUMN_WIDTH, 24, "by the LNH team", Alignment::Center);
+    _upstreamBy = AddLocalizedLabel(fontRepository, FontType::Regular10, COLUMN_WIDTH, 24,
+        _localizationService.GetString("about_by_team"), Alignment::Center);
     char version[16];
     FormatLauncherVersion(version, sizeof(version), false);
     mini_snprintf(text, sizeof(text), "Enhanced %s", version);
     _forkName = AddLabel(fontRepository, FontType::Medium10, COLUMN_WIDTH, 24, text, Alignment::Center);
-    _forkBy = AddLabel(fontRepository, FontType::Regular10, COLUMN_WIDTH, 24, "by rasalopa", Alignment::Center);
+    _forkBy = AddLocalizedLabel(fontRepository, FontType::Regular10, COLUMN_WIDTH, 24,
+        _localizationService.GetString("about_by_author"), Alignment::Center);
 
     // "rasalopa/pico-launcher-enhanced @ 2173910": where the build came from
     // and which commit, as far as the build knows. The version is in the
@@ -115,6 +120,17 @@ SharedPtr<Label2DView> AboutBottomSheetView::AddLabel(const IFontRepository* fon
     return label;
 }
 
+SharedPtr<Label2DView> AboutBottomSheetView::AddLocalizedLabel(const IFontRepository* fontRepository,
+    FontType fontType, u32 width, u32 maxChars, const char16_t* text, Alignment alignment)
+{
+    auto label = Label2DView::CreateShared(width, 16, maxChars, fontRepository->GetFont(fontType));
+    label->SetHorizontalAlignment(alignment);
+    label->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
+    label->SetText(text);
+    AddChildTail(label.GetPointer());
+    return label;
+}
+
 void AboutBottomSheetView::ShowCommandsFrom(int scroll)
 {
     int maxScroll = kCommandCount - VISIBLE_COMMANDS;
@@ -129,7 +145,7 @@ void AboutBottomSheetView::ShowCommandsFrom(int scroll)
     {
         int idx = scroll + i;
         _commandButtons[i]->SetText(idx < kCommandCount ? kCommands[idx].button : "");
-        _commandLabels[i]->SetText(idx < kCommandCount ? kCommands[idx].action : "");
+        _commandLabels[i]->SetText(idx < kCommandCount ? _localizationService.GetString(kCommands[idx].key) : u"");
     }
     char text[16];
     mini_snprintf(text, sizeof(text), "%d-%d of %d", scroll + 1, scroll + VISIBLE_COMMANDS, kCommandCount);

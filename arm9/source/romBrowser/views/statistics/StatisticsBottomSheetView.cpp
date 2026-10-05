@@ -17,6 +17,8 @@
 #include "recentIcon.h"
 #include "Version.h"
 #include "StatisticsBottomSheetView.h"
+#include "services/localization/ILocalizationService.h"
+#include "core/String.h"
 
 // Everything is placed from the sheet's top edge, which rests at y 32 once the
 // sheet is open, so the panel runs from screen y 48 (title) to 180 (last row).
@@ -77,11 +79,14 @@
 #define SHOW_STATISTICS_LAUNCHES_AND_TIME 0
 
 StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewModel> viewModel,
-    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository)
+    const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+    ILocalizationService& localizationService)
     : _viewModel(std::move(viewModel))
     , _materialColorScheme(materialColorScheme)
+    , _localizationService(localizationService)
 {
-    _titleLabel = AddLabel(fontRepository, FontType::Medium11, TITLE_WIDTH, 25, "Statistics");
+    _titleLabel = AddLocalizedLabel(fontRepository, FontType::Medium11, TITLE_WIDTH, 25,
+        _localizationService.GetString("menu_statistics"));
 
     char text[144];
 
@@ -99,18 +104,21 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
         _viewModel->GetFavoriteCount(),
         _viewModel->GetCompletedCount()
     };
-    static const char* const kCaptions[TILE_COUNT] = { "in folder", "played", "favorites", "completed" };
+    static const char* const kCaptionKeys[TILE_COUNT] =
+        { "statistics_folder", "statistics_played", "statistics_favorites", "statistics_completed" };
     for (u32 i = 0; i < TILE_COUNT; i++)
     {
         mini_snprintf(text, sizeof(text), "%u", figures[i]);
         _tileNumbers[i] = AddLabel(fontRepository, FontType::Medium11, TILE_NUMBER_WIDTH, 10, text);
-        _tileCaptions[i] = AddLabel(fontRepository, FontType::Medium7_5, TILE_WIDTH, 15, kCaptions[i],
+        _tileCaptions[i] = AddLocalizedLabel(fontRepository, FontType::Medium7_5, TILE_WIDTH, 15,
+            _localizationService.GetString(kCaptionKeys[i]),
             Alignment::Center);
     }
 
     if (_viewModel->GetPlayedCount() == 0)
     {
-        _headingLabel = AddLabel(fontRepository, FontType::Regular10, HEADING_WIDTH, 32, "Nothing played yet.");
+        _headingLabel = AddLocalizedLabel(fontRepository, FontType::Regular10, HEADING_WIDTH, 32,
+            _localizationService.GetString("recents_empty"));
         return;
     }
 
@@ -129,7 +137,8 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
     }
     _headingLabel = AddLabel(fontRepository, FontType::Medium7_5, HEADING_WIDTH, 48, text);
 #else
-    _headingLabel = AddLabel(fontRepository, FontType::Medium7_5, HEADING_WIDTH, 32, "Most played");
+    _headingLabel = AddLocalizedLabel(fontRepository, FontType::Medium7_5, HEADING_WIDTH, 32,
+        _localizationService.GetString("statistics_most_played"));
 #endif
 
     char name[100];
@@ -149,8 +158,20 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
     if (strlen(lastPlayed) >= 16)
     {
         CopyNameWithoutExtension(name, sizeof(name), _viewModel->GetLastPlayed().fileName.GetString());
-        mini_snprintf(text, sizeof(text), "Last: %s", name);
-        _lastLabel = AddLabel(fontRepository, FontType::Regular10, LAST_TEXT_WIDTH, NAME_MAX_CHARS, text);
+        const char16_t* lastPrefix = _localizationService.GetString("statistics_last");
+        u32 prefixLength = 0;
+        while (lastPrefix[prefixLength] && prefixLength < 20)
+            prefixLength++;
+        String<char16_t, 128> lastName(name);
+        char16_t lastText[160];
+        u32 out = 0;
+        for (u32 i = 0; i < prefixLength && out < 158; i++)
+            lastText[out++] = lastPrefix[i];
+        for (u32 i = 0; lastName.GetString()[i] && out < 158; i++)
+            lastText[out++] = lastName.GetString()[i];
+        lastText[out] = 0;
+        _lastLabel = AddLocalizedLabel(fontRepository, FontType::Regular10, LAST_TEXT_WIDTH,
+            NAME_MAX_CHARS, lastText);
         // stored as "YYYY-MM-DD HH:MM", shown as "16/07 20:41"
         mini_snprintf(text, sizeof(text), "%c%c/%c%c %c%c:%c%c",
             lastPlayed[8], lastPlayed[9], lastPlayed[5], lastPlayed[6],
@@ -162,6 +183,17 @@ StatisticsBottomSheetView::StatisticsBottomSheetView(SharedPtr<StatisticsViewMod
 
 SharedPtr<Label2DView> StatisticsBottomSheetView::AddLabel(const IFontRepository* fontRepository,
     FontType fontType, u32 width, u32 maxChars, const char* text, Alignment alignment)
+{
+    auto label = Label2DView::CreateShared(width, 16, maxChars, fontRepository->GetFont(fontType));
+    label->SetHorizontalAlignment(alignment);
+    label->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
+    label->SetText(text);
+    AddChildTail(label.GetPointer());
+    return label;
+}
+
+SharedPtr<Label2DView> StatisticsBottomSheetView::AddLocalizedLabel(const IFontRepository* fontRepository,
+    FontType fontType, u32 width, u32 maxChars, const char16_t* text, Alignment alignment)
 {
     auto label = Label2DView::CreateShared(width, 16, maxChars, fontRepository->GetFont(fontType));
     label->SetHorizontalAlignment(alignment);

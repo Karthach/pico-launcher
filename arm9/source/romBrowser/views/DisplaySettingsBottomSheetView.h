@@ -8,6 +8,7 @@
 class IRomBrowserController;
 class MaterialColorScheme;
 class IFontRepository;
+class ILocalizationService;
 
 class DisplaySettingsBottomSheetView : public BottomSheetView
 {
@@ -53,13 +54,15 @@ private:
     std::array<SharedPtr<IconButton2DView>, 4> _brightnessOptions;
 
     const MaterialColorScheme* _materialColorScheme;
+    ILocalizationService& _localizationService;
 
     SharedPtr<IconButton2DView> CreateLayoutOptionIconButton();
     SharedPtr<IconButton2DView> CreateSortOptionIconButton();
     SharedPtr<IconButton2DView> CreateBrightnessOptionIconButton();
 
     DisplaySettingsBottomSheetView(DisplaySettingsViewModel* viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 
     void UpdateLabels();
 

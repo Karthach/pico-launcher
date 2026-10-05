@@ -15,14 +15,17 @@ public:
     {
         const char* saveFileName = romBrowserController->GetDeleteSaveFileName();
         if (saveFileName && saveFileName[0] != 0)
-            mini_snprintf(_detailLine, sizeof(_detailLine), "The save %s is also deleted", saveFileName);
+            mini_snprintf(_detailLine, sizeof(_detailLine), "%s", saveFileName);
         else
             _detailLine[0] = 0;
     }
 
     const char16_t* GetTitle() const override { return u"Delete game?"; }
+    const char* GetTitleKey() const override { return "delete_game_title"; }
     const char* GetNameLine() const override { return _fileName.GetString(); }
     const char* GetDetailLine() const override { return _detailLine; }
+    const char* GetDetailKey() const override { return "delete_game_save_detail"; }
+    const char* GetDetailArgument() const override { return _detailLine; }
 
     void Confirm() override
     {

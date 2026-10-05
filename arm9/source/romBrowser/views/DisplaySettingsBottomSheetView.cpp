@@ -26,6 +26,7 @@
 #include "themes/material/MaterialColorScheme.h"
 #include "themes/IFontRepository.h"
 #include "DisplaySettingsBottomSheetView.h"
+#include "services/localization/ILocalizationService.h"
 
 #define TITLE_LABEL_X       20
 #define TITLE_LABEL_Y       16
@@ -70,7 +71,7 @@ static RomBrowserSortMode sRomBrowserSortModes[5] =
 
 DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     DisplaySettingsViewModel* viewModel, const MaterialColorScheme* materialColorScheme,
-    const IFontRepository* fontRepository)
+    const IFontRepository* fontRepository, ILocalizationService& localizationService)
     : _viewModel(viewModel)
     , _hasBacklightLevels(viewModel->HasBacklightLevels())
     , _titleLabel(Label2DView::CreateShared(128, 16, 25, fontRepository->GetFont(FontType::Medium11)))
@@ -88,8 +89,9 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     , _sortingLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _brightnessLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Regular10)))
     , _materialColorScheme(materialColorScheme)
+    , _localizationService(localizationService)
 {
-    _titleLabel->SetText(u"Display Settings");
+    _titleLabel->SetText(_localizationService.GetString("display_settings_title"));
     AddChildTail(_titleLabel.GetPointer());
 
     _themeButton->SetAction([] (IconButtonView*, void* arg)
@@ -105,16 +107,16 @@ DisplaySettingsBottomSheetView::DisplaySettingsBottomSheetView(
     }, this);
     AddChildTail(_hideEmptyFoldersButton.GetPointer());
 
-    _layoutLabel->SetText(u"Layout");
+    _layoutLabel->SetText(_localizationService.GetString("display_settings_layout"));
     AddChildTail(_layoutLabel.GetPointer());
-    _sortingLabel->SetText(u"Sorting");
+    _sortingLabel->SetText(_localizationService.GetString("display_settings_sorting"));
     AddChildTail(_sortingLabel.GetPointer());
     // On a console without the DS Lite's levels the brightness row is left out
     // rather than offering four buttons that do nothing (issue #27), which is
     // how the sheet looked before the row existed. The label and buttons are
     // still made, so the vram and layout code need no special case; they are
     // just never added to the sheet, and MoveFocus never moves down to them.
-    _brightnessLabel->SetText(u"Light");
+    _brightnessLabel->SetText(_localizationService.GetString("display_settings_light"));
     if (_hasBacklightLevels)
         AddChildTail(_brightnessLabel.GetPointer());
 

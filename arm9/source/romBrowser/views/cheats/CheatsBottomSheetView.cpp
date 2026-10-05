@@ -67,7 +67,7 @@ CheatsBottomSheetView::CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewMode
     _secondaryLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
     _descriptionLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Marquee);
     _descriptionLabel->SetText(u"");
-    _promptsLabel->SetText(u"X: all off");
+    _promptsLabel->SetText(localizationService.GetString("cheats_all_off"));
     AddChildTail(_titleLabel.GetPointer());
     AddChildTail(_secondaryLabel.GetPointer());
     AddChildTail(_descriptionLabel.GetPointer());

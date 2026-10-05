@@ -280,9 +280,10 @@ void SettingsProcess::SyncDeleteSheet()
         {
             if (!_deleteSheetShown)
             {
-                auto viewModel = SharedPtr<ThemeDeleteConfirmViewModel>::MakeShared(_settingsController.get());
+                auto viewModel = SharedPtr<ThemeDeleteConfirmViewModel>::MakeShared(
+                    _settingsController.get(), &_localizationService);
                 _dialogPresenter.ShowDialog(DeleteConfirmBottomSheetView::CreateShared(
-                    std::move(viewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository()));
+                    std::move(viewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService));
                 _deleteSheetShown = true;
             }
             break;

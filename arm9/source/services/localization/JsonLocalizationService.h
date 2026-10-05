@@ -13,7 +13,7 @@ class JsonLocalizationService : public ILocalizationService
         std::unique_ptr<char16_t[]> value;
     };
 
-    StringEntry _strings[32];
+    StringEntry _strings[128];
     u32 _stringCount = 0;
     IAppSettingsService& _appSettingsService;
     String<char, 16> _loadedLanguage;

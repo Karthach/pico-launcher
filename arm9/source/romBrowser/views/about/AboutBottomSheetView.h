@@ -9,6 +9,7 @@
 class MaterialColorScheme;
 class IFontRepository;
 class IVramManager;
+class ILocalizationService;
 
 /// @brief The about sheet, behind the small button in the menu's title row:
 ///        who made what, which build this is, and the controls that have no
@@ -41,6 +42,7 @@ private:
 
     SharedPtr<AboutViewModel> _viewModel;
     const MaterialColorScheme* _materialColorScheme;
+    ILocalizationService& _localizationService;
     SharedPtr<Label2DView> _upstreamName;
     SharedPtr<Label2DView> _upstreamBy;
     SharedPtr<Label2DView> _forkName;
@@ -55,10 +57,13 @@ private:
     int _scroll = -1;
 
     AboutBottomSheetView(SharedPtr<AboutViewModel> viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 
     SharedPtr<Label2DView> AddLabel(const IFontRepository* fontRepository, FontType fontType,
         u32 width, u32 maxChars, const char* text, Alignment alignment);
+    SharedPtr<Label2DView> AddLocalizedLabel(const IFontRepository* fontRepository, FontType fontType,
+        u32 width, u32 maxChars, const char16_t* text, Alignment alignment);
     void ShowCommandsFrom(int scroll);
     u32 LoadSprite(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
 };

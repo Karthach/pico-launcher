@@ -8,7 +8,7 @@
 
 #pragma GCC optimize("Os")
 
-#define JSON_RESERVED_SIZE  2048
+#define JSON_RESERVED_SIZE  4096
 #define MAX_LOCALIZATION_JSON_SIZE 8192
 
 JsonLocalizationService::JsonLocalizationService(IAppSettingsService& appSettingsService)
@@ -78,7 +78,7 @@ void JsonLocalizationService::Reload()
     JsonObject root = json.as<JsonObject>();
     for (JsonPair it : root)
     {
-        if (_stringCount >= 32) break;
+        if (_stringCount >= 128) break;
 
         StringEntry& entry = _strings[_stringCount];
         entry.key = it.key().c_str();

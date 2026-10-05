@@ -485,7 +485,7 @@ void App::HandleHideGameInfoTrigger()
 void App::HandleShowDisplaySettingsTrigger()
 {
     auto displaySettingsDialog = DisplaySettingsBottomSheetView::CreateShared(
-        &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     displaySettingsDialog->SetGraphics(_iconButtonViewVram);
     _dialogPresenter.ShowDialog(std::move(displaySettingsDialog));
 }
@@ -503,7 +503,7 @@ void App::HandleShowRecentsTrigger()
     auto recentsViewModel = SharedPtr<RecentsViewModel>::MakeShared(
         &_romBrowserController, GameListKind::Recents);
     auto recentsDialog = RecentsBottomSheetView::CreateShared(
-        std::move(recentsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager);
+        std::move(recentsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager, _localizationService);
     _dialogPresenter.ShowDialog(std::move(recentsDialog));
 }
 
@@ -520,7 +520,7 @@ void App::HandleShowFavoritesTrigger()
     auto favoritesViewModel = SharedPtr<RecentsViewModel>::MakeShared(
         &_romBrowserController, GameListKind::Favorites);
     auto favoritesDialog = RecentsBottomSheetView::CreateShared(
-        std::move(favoritesViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager);
+        std::move(favoritesViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager, _localizationService);
     _dialogPresenter.ShowDialog(std::move(favoritesDialog));
 }
 
@@ -536,7 +536,7 @@ void App::HandleShowStatisticsTrigger()
     CloseSheetIfLeavingMenu();
     auto statisticsViewModel = SharedPtr<StatisticsViewModel>::MakeShared(&_romBrowserController);
     auto statisticsDialog = StatisticsBottomSheetView::CreateShared(
-        std::move(statisticsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        std::move(statisticsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     _dialogPresenter.ShowDialog(std::move(statisticsDialog));
 }
 
@@ -552,7 +552,7 @@ void App::HandleShowDeleteConfirmTrigger()
     CloseSheetIfLeavingMenu();
     auto deleteConfirmViewModel = SharedPtr<DeleteConfirmViewModel>::MakeShared(&_romBrowserController);
     auto deleteConfirmDialog = DeleteConfirmBottomSheetView::CreateShared(
-        std::move(deleteConfirmViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        std::move(deleteConfirmViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     _dialogPresenter.ShowDialog(std::move(deleteConfirmDialog));
 }
 
@@ -565,9 +565,10 @@ void App::HandleHideDeleteConfirmTrigger()
 
 void App::HandleShowMenuTrigger()
 {
-    auto menuViewModel = SharedPtr<MenuViewModel>::MakeShared(&_romBrowserController);
+    auto menuViewModel = SharedPtr<MenuViewModel>::MakeShared(
+        &_romBrowserController, &_appSettingsService, &_localizationService);
     auto menuDialog = MenuBottomSheetView::CreateShared(
-        std::move(menuViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        std::move(menuViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     menuDialog->SetGraphics(_iconButtonViewVram);
     _dialogPresenter.ShowDialog(std::move(menuDialog));
 }
@@ -577,7 +578,7 @@ void App::HandleShowAboutTrigger()
     CloseSheetIfLeavingMenu();
     auto aboutViewModel = SharedPtr<AboutViewModel>::MakeShared(&_romBrowserController);
     auto aboutDialog = AboutBottomSheetView::CreateShared(
-        std::move(aboutViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+        std::move(aboutViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     _dialogPresenter.ShowDialog(std::move(aboutDialog));
 }
 

@@ -9,6 +9,7 @@
 class MaterialColorScheme;
 class IFontRepository;
 class IVramManager;
+class ILocalizationService;
 
 /// @brief Bottom sheet with library statistics.
 ///
@@ -38,6 +39,7 @@ private:
 
     SharedPtr<StatisticsViewModel> _viewModel;
     const MaterialColorScheme* _materialColorScheme;
+    ILocalizationService& _localizationService;
 
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<Label2DView> _versionLabel;
@@ -56,10 +58,13 @@ private:
     bool _hasLast = false;
 
     StatisticsBottomSheetView(SharedPtr<StatisticsViewModel> viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 
     SharedPtr<Label2DView> AddLabel(const IFontRepository* fontRepository, FontType fontType,
         u32 width, u32 maxChars, const char* text, Alignment alignment = Alignment::Start);
+    SharedPtr<Label2DView> AddLocalizedLabel(const IFontRepository* fontRepository, FontType fontType,
+        u32 width, u32 maxChars, const char16_t* text, Alignment alignment = Alignment::Start);
     static void CopyNameWithoutExtension(char* dst, u32 dstSize, const char* fileName);
     u32 LoadSprite(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
     void DrawIcon(GraphicsContext& graphicsContext, int x, int y, u32 vramOffset,

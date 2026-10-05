@@ -10,6 +10,7 @@ class MaterialColorScheme;
 class IFontRepository;
 class IVramManager;
 class MenuBottomSheetView;
+class ILocalizationService;
 
 /// @brief One entry of the menu: an icon, its name and, for a filter, whether
 ///        it is on. A tap or A runs it; the sheet decides what that means.
@@ -38,10 +39,10 @@ public:
     /// @brief A filter that is on draws in its colour and says so at the end.
     void SetActive(bool active)
     {
-        if (_stateLabel && active != _active)
-            _stateLabel->SetText(active ? "on" : "off");
         _active = active;
     }
+    void SetStateText(const char* text) { if (_stateLabel) _stateLabel->SetText(text); }
+    void SetStateText(const char16_t* text) { if (_stateLabel) _stateLabel->SetText(text); }
 
     /// @brief Off is faded and inert, like the delete button was on a folder.
     void SetEnabled(bool enabled) { _enabled = enabled; }
@@ -63,7 +64,7 @@ private:
 
     /// @param width A cell of the two-column part or a full row (see the .cpp).
     /// @param hasState Whether this is a filter, with "on" or "off" at the end.
-    MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char* name,
+    MenuItemView(MenuBottomSheetView* sheet, int index, int width, const char16_t* name,
         bool hasState, const Rgb<8, 8, 8>& activeColor,
         const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
 };
@@ -106,17 +107,20 @@ private:
         ITEM_DELETE,
         ITEM_FAVORITES_FILTER,
         ITEM_COMPLETED_FILTER,
+        ITEM_LANGUAGE,
         ITEM_COUNT
     };
 
     SharedPtr<MenuViewModel> _viewModel;
     const MaterialColorScheme* _materialColorScheme;
+    ILocalizationService& _localizationService;
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<IconButton2DView> _aboutButton;
     SharedPtr<MenuItemView> _items[ITEM_COUNT];
 
     MenuBottomSheetView(SharedPtr<MenuViewModel> viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
+        ILocalizationService& localizationService);
 
     u32 LoadSprite(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
 };

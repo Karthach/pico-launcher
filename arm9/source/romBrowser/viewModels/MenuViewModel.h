@@ -1,5 +1,8 @@
 #pragma once
+#include <string.h>
 #include "../IRomBrowserController.h"
+#include "services/settings/IAppSettingsService.h"
+#include "services/localization/ILocalizationService.h"
 
 /// @brief View model for the menu the app bar's "more" button opens. Every
 ///        entry forwards to the controller: the panels replace the sheet with
@@ -8,8 +11,10 @@
 class MenuViewModel
 {
 public:
-    explicit MenuViewModel(IRomBrowserController* romBrowserController)
-        : _romBrowserController(romBrowserController) { }
+    MenuViewModel(IRomBrowserController* romBrowserController, IAppSettingsService* appSettingsService,
+        ILocalizationService* localizationService)
+        : _romBrowserController(romBrowserController), _appSettingsService(appSettingsService),
+          _localizationService(localizationService) { }
 
     void ShowRecents() { _romBrowserController->ShowRecents(); }
     void ShowFavorites() { _romBrowserController->ShowFavorites(); }
@@ -22,9 +27,19 @@ public:
     bool IsCompletedFilterEnabled() const { return _romBrowserController->IsCompletedFilterEnabled(); }
 
     void ShowAbout() { _romBrowserController->ShowAbout(); }
+    const char* GetLanguageCode() const { return _appSettingsService->GetAppSettings().language.GetString(); }
+    void ToggleLanguage()
+    {
+        auto& language = _appSettingsService->GetAppSettings().language;
+        language = strcmp(language.GetString(), "spanish") == 0 ? "english" : "spanish";
+        _appSettingsService->Save();
+        _localizationService->Reload();
+    }
 
     void Close() { _romBrowserController->HideMenu(); }
 
 private:
     IRomBrowserController* _romBrowserController;
+    IAppSettingsService* _appSettingsService;
+    ILocalizationService* _localizationService;
 };
