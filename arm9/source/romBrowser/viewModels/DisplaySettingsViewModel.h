@@ -59,6 +59,21 @@ public:
         }
     }
 
+    int GetBacklightLevel() const
+    {
+        return _romBrowserController->GetBacklightLevel();
+    }
+
+    void SetBacklightLevel(int level)
+    {
+        _romBrowserController->SetBacklightLevel(level);
+    }
+
+    bool HasBacklightLevels() const
+    {
+        return _romBrowserController->HasBacklightLevels();
+    }
+
     const char* GetLanguage() const
     {
         return _appSettingsService->GetAppSettings().language.GetString();
