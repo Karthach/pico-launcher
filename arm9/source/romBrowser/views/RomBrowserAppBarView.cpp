@@ -4,7 +4,6 @@
 #include "gui/VramContext.h"
 #include "backIcon.h"
 #include "settingsIcon.h"
-#include "moreIcon.h"
 #include "hGridIcon.h"
 #include "vGridIcon.h"
 #include "bannerListIcon.h"
@@ -19,16 +18,12 @@ RomBrowserAppBarView::RomBrowserAppBarView(
     const IRomBrowserViewFactory* romBrowserViewFactory)
     : _viewModel(viewModel)
 {
-    _appBarView = displayMode.CreateAppBarView(romBrowserViewFactory, 1, 2);
+    _appBarView = displayMode.CreateAppBarView(romBrowserViewFactory, 1, 1);
     AddChildTail(_appBarView.GetPointer());
 
     _appBarView->SetButtonAction(APP_BAR_BUTTON_BACK, [] (IconButtonView* sender, void* arg)
     {
         ((RomBrowserAppBarViewModel*)arg)->NavigateUp();
-    }, _viewModel);
-    _appBarView->SetButtonAction(APP_BAR_BUTTON_MENU, [] (IconButtonView* sender, void* arg)
-    {
-        ((RomBrowserAppBarViewModel*)arg)->ShowMenu();
     }, _viewModel);
     _appBarView->SetButtonAction(APP_BAR_BUTTON_DISPLAY_SETTINGS, [] (IconButtonView* sender, void* arg)
     {
@@ -50,10 +45,6 @@ void RomBrowserAppBarView::InitVram(const VramContext& vramContext)
         u32 settingsIconVramOffset = objVramManager->Alloc(settingsIconTilesLen);
         dma_ntrCopy32(3, settingsIconTiles, objVramManager->GetVramAddress(settingsIconVramOffset), settingsIconTilesLen);
         _appBarView->SetButtonIcon(APP_BAR_BUTTON_DISPLAY_SETTINGS, settingsIconVramOffset);
-
-        u32 moreIconVramOffset = objVramManager->Alloc(moreIconTilesLen);
-        dma_ntrCopy32(3, moreIconTiles, objVramManager->GetVramAddress(moreIconVramOffset), moreIconTilesLen);
-        _appBarView->SetButtonIcon(APP_BAR_BUTTON_MENU, moreIconVramOffset);
 
         // u32 settingsIconVramOffset = objVramManager->Alloc(settingsIconTilesLen);
         // dma_ntrCopy32(3, settingsIconTiles, objVramManager->GetVramAddress(settingsIconVramOffset), settingsIconTilesLen);

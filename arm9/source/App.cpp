@@ -68,7 +68,7 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService,
         InputKey::DpadLeft | InputKey::DpadRight | InputKey::DpadUp | InputKey::DpadDown | InputKey::L | InputKey::R,
         25, 8)
     , _romBrowserController(&appSettingsService, &gameDataService, &bgmService, &_ioTaskQueue, &_bgTaskQueue)
-    , _displaySettingsBottomSheetViewModel(&_romBrowserController)
+    , _displaySettingsBottomSheetViewModel(&_romBrowserController, &_appSettingsService, &_localizationService)
     , _romBrowserBottomScreenViewModel(&_romBrowserController)
     , _dialogPresenter(&_focusManager, &_mainObjDialogVram) { }
 
@@ -486,7 +486,7 @@ void App::HandleShowDisplaySettingsTrigger()
 {
     auto displaySettingsDialog = DisplaySettingsBottomSheetView::CreateShared(
         &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
-    displaySettingsDialog->SetGraphics(_iconButtonViewVram);
+    displaySettingsDialog->SetGraphics(_iconButtonViewVram, _chipViewVram);
     _dialogPresenter.ShowDialog(std::move(displaySettingsDialog));
 }
 
@@ -565,8 +565,7 @@ void App::HandleHideDeleteConfirmTrigger()
 
 void App::HandleShowMenuTrigger()
 {
-    auto menuViewModel = SharedPtr<MenuViewModel>::MakeShared(
-        &_romBrowserController, &_appSettingsService, &_localizationService);
+    auto menuViewModel = SharedPtr<MenuViewModel>::MakeShared(&_romBrowserController);
     auto menuDialog = MenuBottomSheetView::CreateShared(
         std::move(menuViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     menuDialog->SetGraphics(_iconButtonViewVram);
@@ -592,7 +591,15 @@ void App::HandleHideAboutTrigger()
 void App::HandleHideMenuTrigger()
 {
     _dialogPresenter.CloseDialog();
-    if (!_dialogPresenter.GetOldFocus())
+    if (_romBrowserController.GetStateMachine().GetPreviousState() == RomBrowserState::DisplaySettings)
+    {
+        auto displaySettingsDialog = DisplaySettingsBottomSheetView::CreateShared(
+            &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(),
+            _theme->GetFontRepository(), _localizationService);
+        displaySettingsDialog->SetGraphics(_iconButtonViewVram, _chipViewVram);
+        _dialogPresenter.ShowDialog(std::move(displaySettingsDialog));
+    }
+    else if (!_dialogPresenter.GetOldFocus())
         _romBrowserBottomScreenView->Focus(_focusManager);
 }
 

@@ -20,7 +20,7 @@ A feature fork of [Pico Launcher](https://github.com/LNH-team/pico-launcher) by 
 
 Everything upstream Pico Launcher offers (display modes, [custom icons, banners & covers](docs/Customization.md) for games *and folders*, [themes](docs/Themes.md), [cheats](docs/Cheats.md), [file associations](docs/FileAssociations.md); see [Usage](docs/Usage.md)), plus:
 
-- **A menu instead of a row of icons**: the app bar keeps back and display settings and gains a three-dot button; recently played, favorites, statistics, deletion and the two filters live in the sheet it opens, each with its name
+- **Menu inside display settings**: open the gear, then use the right arrow for recently played, favorites, statistics, deletion and filters; the app bar keeps back and gear
 - **About sheet**: from the menu's title row: who made what, the exact build and the repository it came from, and a cheat sheet of the controls that have no button
 - **Jump by initial**: press L or R to jump to the next initial letter in a folder sorted by name; the letter you land on shows for a moment at the bottom of the touch screen
 - **Game count** of the current folder, at the top of the statistics panel

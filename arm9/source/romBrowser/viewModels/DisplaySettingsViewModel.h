@@ -1,13 +1,20 @@
 #pragma once
+#include <string.h>
 #include "../IRomBrowserController.h"
+#include "services/localization/ILocalizationService.h"
 #include "services/settings/RomBrowserDisplaySettings.h"
+
+#include "services/settings/IAppSettingsService.h"
 
 /// @brief View model for the display settings screen.
 class DisplaySettingsViewModel
 {
 public:
-    explicit DisplaySettingsViewModel(IRomBrowserController* romBrowserController)
+    DisplaySettingsViewModel(IRomBrowserController* romBrowserController, IAppSettingsService* appSettingsService,
+        ILocalizationService* localizationService)
         : _romBrowserController(romBrowserController)
+        , _appSettingsService(appSettingsService)
+        , _localizationService(localizationService)
         , _romBrowserDisplaySettings(_romBrowserController->GetRomBrowserDisplaySettings()) { }
 
     constexpr RomBrowserLayout GetRomBrowserDisplayMode() const
@@ -38,7 +45,7 @@ public:
         }
     }
 
-    constexpr bool GetHideEmptyFolders() const
+    bool GetHideEmptyFolders() const
     {
         return _romBrowserDisplaySettings.hideEmptyFolders;
     }
@@ -52,19 +59,20 @@ public:
         }
     }
 
-    int GetBacklightLevel() const
+    const char* GetLanguage() const
     {
-        return _romBrowserController->GetBacklightLevel();
+        return _appSettingsService->GetAppSettings().language.GetString();
     }
 
-    void SetBacklightLevel(int level)
+    void SetLanguage(const char* language)
     {
-        _romBrowserController->SetBacklightLevel(level);
-    }
-
-    bool HasBacklightLevels() const
-    {
-        return _romBrowserController->HasBacklightLevels();
+        if (strcmp(_appSettingsService->GetAppSettings().language.GetString(), language) != 0)
+        {
+            _appSettingsService->GetAppSettings().language = language;
+            _appSettingsService->Save();
+            _localizationService->Reload();
+            _romBrowserController->RestartForLanguageChange();
+        }
     }
 
     void Close()
@@ -77,7 +85,11 @@ public:
         _romBrowserController->GotoSettingsScreen();
     }
 
+    void ShowMenu() { _romBrowserController->ShowMenu(); }
+
 private:
     IRomBrowserController* _romBrowserController;
+    IAppSettingsService* _appSettingsService;
+    ILocalizationService* _localizationService;
     RomBrowserDisplaySettings _romBrowserDisplaySettings;
 };

@@ -107,7 +107,6 @@ private:
         ITEM_DELETE,
         ITEM_FAVORITES_FILTER,
         ITEM_COMPLETED_FILTER,
-        ITEM_LANGUAGE,
         ITEM_COUNT
     };
 

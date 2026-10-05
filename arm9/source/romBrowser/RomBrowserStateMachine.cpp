@@ -29,7 +29,7 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
         // The menu hands over to whatever is picked from it. A filter toggle
         // fires ChangeDisplayMode, which from here also means "and close the menu".
         .In(RomBrowserState::Menu)
-            .Trigger(RomBrowserStateTrigger::HideMenu).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::HideMenu).GoesTo(RomBrowserState::DisplaySettings)
             .Trigger(RomBrowserStateTrigger::ChangeDisplayMode).GoesTo(RomBrowserState::Browser)
             .Trigger(RomBrowserStateTrigger::ShowRecents).GoesTo(RomBrowserState::Recents)
             .Trigger(RomBrowserStateTrigger::ShowFavorites).GoesTo(RomBrowserState::Favorites)
@@ -56,6 +56,7 @@ bool RomBrowserStateMachine::FireDirect(RomBrowserStateTrigger trigger)
         .In(RomBrowserState::DisplaySettings)
             .Trigger(RomBrowserStateTrigger::ChangeDisplayMode).GoesTo(RomBrowserState::DisplaySettings)
             .Trigger(RomBrowserStateTrigger::HideDisplaySettings).GoesTo(RomBrowserState::Browser)
+            .Trigger(RomBrowserStateTrigger::ShowMenu).GoesTo(RomBrowserState::Menu)
             .Trigger(RomBrowserStateTrigger::GotoSettingsScreen).GoesTo(RomBrowserState::GoingToSettingsScreen)
         // A launch the console cannot carry out (a DSi-only game on a DS) comes
         // straight back, before anything about it was recorded.

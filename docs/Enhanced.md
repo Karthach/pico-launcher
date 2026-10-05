@@ -11,12 +11,12 @@ These controls are available in the rom browser, on top of the standard ones (se
 | X (hold ~half a second) | Toggle completed for the highlighted game |
 | SELECT + A | Launch a random game from the current folder |
 | START (hold ~half a second) | Save a screenshot of both screens (see [Screenshots](#screenshots)) |
-| Menu button (app bar, the three dots) | Open the menu: recently played, favorites, statistics, delete game and the two filters (see [The menu](#the-menu)) |
+| Right arrow (display settings) | Open the menu: recently played, favorites, statistics, delete game and the two filters (see [The menu](#the-menu)) |
 | Light row (display settings) | Set the DS Lite backlight level (4 levels) |
 | Folder button (display settings) | Toggle hiding empty folders |
 
 ## The menu
-The app bar has three buttons: back, the menu (three dots) and display settings. The menu opens a sheet with everything the bar used to hold as icons, each with its name: **Recently played**, **Favorites**, **Statistics** and **Delete game** in two columns, and under them the two filters, **Only favorites** and **Only completed**, each saying `on` or `off`. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu. B, or a tap outside the sheet, closes it. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
+The app bar has back and display settings. Open display settings and use the right arrow to move to the menu page. It lists: **Recently played**, **Favorites**, **Statistics** and **Delete game** in two columns, and under them the two filters, **Only favorites** and **Only completed**, each saying `on` or `off`. Tap an entry, or highlight it with the d-pad and press A. Picking a panel closes the menu and opens the panel in its place; a filter applies at once and closes the menu. B, or a tap outside the sheet, returns to display settings. No app bar button hides a second action behind a hold any more; the X and START holds in the table above are unchanged.
 
 The small button at the right of the menu's title opens the **about** sheet: Pico Launcher by the LNH team on one side, Enhanced by rasalopa on the other, then the version with the commit it was built from and the repository the build came from, and a cheat sheet of the controls that have no button of their own, three at a time; up and down scroll it. A build made from another repository names that repository there, so you can always tell where a build came from.
 
@@ -115,13 +115,16 @@ are listed. Pressing X disables every cheat at once. The launcher supported this
 but nothing on screen said so. Handy to make sure no code is active before going online or
 starting a speedrun.
 
+## Display settings
+The gear opens layout and sorting choices you can swipe horizontally. Their selected names appear in blue, and English and Español language chips sit below. The normal cover flow remains available; inverted cover flow was removed. The right arrow opens the menu page. A folder button in the title row toggles empty folders.
+
 ## Screen brightness (DS Lite)
-The display settings sheet (gear button in the app bar) has a **Light** row with the DS Lite's four backlight levels. Tapping a level applies it immediately, and the choice is remembered and restored on every boot. It also stays active inside the game you launch, until the console powers off.
+On a DS Lite, the display settings sheet has a **Light** row with four backlight levels. Tapping a level applies it immediately, and the choice is remembered and restored on every boot. It also stays active inside the game you launch, until the console powers off.
 
 Until you pick a level the launcher leaves the firmware's brightness untouched. On an original DS, a DSi, or a 3DS running the launcher from a DSpico, the row is not shown: the original DS has no brightness levels, and the DSi and 3DS set brightness from their own system menu.
 
 ## Hide empty folders
-The display settings sheet has a folder toggle that hides folders containing no visible games, homebrew or media of their own (banner, BGM and other system files don't count as content). It's off by default; toggling it refreshes the folder you're currently viewing immediately. While it is on, its circle takes the same color as the chosen options below it.
+The display settings sheet has a folder button in its title row that hides folders containing no visible games, homebrew or media of their own (banner, BGM and other system files don't count as content). It's off by default; toggling it refreshes the folder you're currently viewing immediately. While it is on, its circle takes the same color as the chosen options below it.
 
 Subfolders are followed a few levels deep, so a folder containing only other empty folders is hidden too. Launcher support folders (names starting with `_`) are always kept.
 
