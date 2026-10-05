@@ -1,8 +1,6 @@
 #pragma once
 #include <array>
-#include "core/SharedPtr.h"
 #include "BottomSheetView.h"
-#include "ChipView.h"
 #include "gui/views/Label2DView.h"
 #include "IconButton2DView.h"
 #include "../viewModels/DisplaySettingsViewModel.h"
@@ -10,7 +8,6 @@
 class IRomBrowserController;
 class MaterialColorScheme;
 class IFontRepository;
-class ILocalizationService;
 
 class DisplaySettingsBottomSheetView : public BottomSheetView
 {
@@ -20,64 +17,51 @@ public:
     void InitVram(const VramContext& vramContext) override;
     void Update() override;
     void Draw(GraphicsContext& graphicsContext) override;
-    void VBlank() override;
     bool HandleInput(const InputProvider& inputProvider, FocusManager& focusManager) override;
-    void HandlePenDown(const Point& touchPoint, FocusManager& focusManager) override;
-    void HandlePenMove(const Point& touchPoint, FocusManager& focusManager) override;
-    void HandlePenUp(const Point& lastTouchPoint, FocusManager& focusManager) override;
     SharedPtr<View> MoveFocus(const SharedPtr<View>& currentFocus,
         FocusMoveDirection direction, View* source) override;
 
-    void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken,
-        const ChipView::VramToken& chipViewVramToken);
+    void SetGraphics(const IconButton2DView::VramToken& iconButtonVramToken);
 
-    void Focus(FocusManager& focusManager) override;
+    void Focus(FocusManager& focusManager) override
+    {
+        focusManager.Focus(_layoutOptions[0]);
+    }
 
 protected:
     void Close() override;
 
 private:
     DisplaySettingsViewModel* _viewModel;
-    ILocalizationService& _localizationService;
+    /// @brief Whether the console has backlight levels, read once when the
+    ///        sheet is made. Without them the brightness row is never added to
+    ///        the sheet, so neither drawing nor focus may reach it.
+    bool _hasBacklightLevels;
 
     SharedPtr<Label2DView> _titleLabel;
     SharedPtr<IconButton2DView> _themeButton;
+    /// @brief Toggles RomBrowserDisplaySettings::hideEmptyFolders. Lives in
+    ///        the title row (icon-only, like the theme button) - the layout/
+    ///        sorting/brightness rows below already fill the sheet's height.
+    SharedPtr<IconButton2DView> _hideEmptyFoldersButton;
     SharedPtr<Label2DView> _layoutLabel;
-    SharedPtr<Label2DView> _layoutNameLabel;
     SharedPtr<Label2DView> _sortingLabel;
-    SharedPtr<Label2DView> _sortingNameLabel;
-    SharedPtr<Label2DView> _languageLabel;
+    SharedPtr<Label2DView> _brightnessLabel;
 
-    std::array<SharedPtr<IconButton2DView>, 4> _layoutOptions;
+    std::array<SharedPtr<IconButton2DView>, 5> _layoutOptions;
     std::array<SharedPtr<IconButton2DView>, 5> _sortOptions;
-    std::array<SharedPtr<ChipView>, 2> _languageOptions;
-
-    int _sortScrollX = 0;
-    int _layoutScrollX = 0;
-    bool _isDraggingLayout = false;
-    bool _isManualLayoutScroll = false;
-    bool _isDraggingSort = false;
-    bool _isManualSortScroll = false;
-    Point _lastLayoutTouchPoint;
-    Point _lastSortTouchPoint;
-    u32 _sortClipMaskVramOffset = 0;
+    std::array<SharedPtr<IconButton2DView>, 4> _brightnessOptions;
 
     const MaterialColorScheme* _materialColorScheme;
-    const IFontRepository* _fontRepository;
 
     SharedPtr<IconButton2DView> CreateLayoutOptionIconButton();
     SharedPtr<IconButton2DView> CreateSortOptionIconButton();
-    SharedPtr<ChipView> CreateLanguageOptionChip();
+    SharedPtr<IconButton2DView> CreateBrightnessOptionIconButton();
 
     DisplaySettingsBottomSheetView(DisplaySettingsViewModel* viewModel,
-        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository,
-        ILocalizationService& localizationService);
+        const MaterialColorScheme* materialColorScheme, const IFontRepository* fontRepository);
 
     void UpdateLabels();
-    void ClampLayoutScroll();
-    void EnsureLayoutOptionVisible(u32 index);
-    void ClampSortScroll();
-    void EnsureSortOptionVisible(u32 index);
 
     u32 LoadIcon(IVramManager& vramManager, const unsigned int* tiles, u32 tilesLength) const;
 };

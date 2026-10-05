@@ -279,7 +279,20 @@ SharedPtr<View> RecyclerView::MoveFocusVertical(const SharedPtr<View>& currentFo
         (_selectedItem->itemIdx < _columns && direction == FocusMoveDirection::Up) ||
         (_selectedItem->itemIdx / _columns >= (int)(_itemCount - 1) / _columns && direction == FocusMoveDirection::Down))
     {
-        return View::MoveFocus(currentFocus, direction, this);
+        auto outside = View::MoveFocus(currentFocus, direction, this);
+        if (outside || !_wrapAround || _itemCount < 2 ||
+            (direction != FocusMoveDirection::Up && direction != FocusMoveDirection::Down))
+        {
+            return outside;
+        }
+
+        // Nothing around the list wanted the focus: wrap to the other end.
+        // EnsureVisible without animation, like the initial jump does - the
+        // other end is usually a whole screen away.
+        int idx = direction == FocusMoveDirection::Up ? (int)_itemCount - 1 : 0;
+        EnsureVisible(idx, false);
+        SetSelectedItem(idx);
+        return _selectedItem != nullptr ? _selectedItem->view : SharedFromThis();
     }
 
     if (direction == FocusMoveDirection::Up)
@@ -319,6 +332,20 @@ bool RecyclerView::HandleInput(const InputProvider& inputProvider, FocusManager&
     {
         int direction = inputProvider.Triggered(InputKey::L) ? 1 : -1;
         int selected = _selectedItem->itemIdx;
+
+        // Let the adapter offer something better than a page, such as the next
+        // initial in a folder sorted by name.
+        int bigStep = _adapter->GetBigStepTarget(selected, -direction);
+        if (bigStep >= 0)
+        {
+            _adapter->OnBigStepJump();
+            EnsureVisible(bigStep, false);
+            focusManager.Unfocus();
+            SetSelectedItem(bigStep);
+            focusManager.Focus(_selectedItem->view);
+            return true;
+        }
+
         if (_mode == Mode::HorizontalList || _mode == Mode::HorizontalGrid)
         {
             int visibleColumns = _width / (_itemWidth + _xSpacing);

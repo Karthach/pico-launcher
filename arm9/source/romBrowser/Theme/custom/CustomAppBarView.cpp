@@ -14,7 +14,9 @@ CustomAppBarView::CustomAppBarView(int x, int y, Orientation orientation,
     {
         _buttons[i] = IconButton3DView::CreateShared(
             IconButtonView::Type::Tonal,
-            IconButtonView::State::NoToggle,
+            // never selected: focus shows as the accent icon and veil, the rule
+            // every icon button follows (see IconButtonView.h)
+            IconButtonView::State::ToggleUnselected,
             md::sys::color::inverseOnSurface,
             materialColorScheme);
         AddChildTail(_buttons[i].GetPointer());

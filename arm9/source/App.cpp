@@ -1,5 +1,6 @@
 #include "common.h"
 #include <algorithm>
+#include <ctype.h>
 #include <libtwl/mem/memVram.h>
 #include <libtwl/gfx/gfx.h>
 #include <libtwl/gfx/gfxOam.h>
@@ -13,6 +14,9 @@
 #include "gui/materialDesign.h"
 #include "themes/material/MaterialColorSchemeFactory.h"
 #include "core/math/ColorConverter.h"
+#include "core/mini-printf.h"
+#include "themes/DefaultFontRepository.h"
+#include "Version.h"
 #include "core/math/RgbMixer.h"
 #include "gui/GraphicsContext.h"
 #include "romBrowser/views/ChipView.h"
@@ -21,6 +25,12 @@
 #include "romBrowser/Theme/Material/MaterialThemeFileIconFactory.h"
 #include "romBrowser/views/NdsGameDetailsBottomSheetView.h"
 #include "romBrowser/views/cheats/CheatsBottomSheetView.h"
+#include "romBrowser/views/recents/RecentsBottomSheetView.h"
+#include "romBrowser/views/statistics/StatisticsBottomSheetView.h"
+#include "romBrowser/viewModels/DeleteConfirmViewModel.h"
+#include "romBrowser/views/deleteconfirm/DeleteConfirmBottomSheetView.h"
+#include "romBrowser/views/menu/MenuBottomSheetView.h"
+#include "romBrowser/views/about/AboutBottomSheetView.h"
 #include "romBrowser/views/DisplaySettingsBottomSheetView.h"
 #include "bgm/AudioStreamPlayer.h"
 #include "bgm/BgmService.h"
@@ -32,7 +42,15 @@
 
 #define SPLASH_FRAMES       44
 
-App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILocalizationService& localizationService)
+// Display control for the browser, and for the boot page under it: the same
+// mode with every background off, so only the version sprite shows over the
+// white backdrop until the browser takes over.
+#define BROWSER_DISPCNT         0x211F1B
+#define SPLASH_BOTTOM_DISPCNT   (BROWSER_DISPCNT & ~(0x0F << 8))
+#define SPLASH_VERSION_WIDTH    128
+
+App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService,
+    IGameDataService& gameDataService, ILocalizationService& localizationService)
     : _mainObjPltt(GFX_PLTT_OBJ_MAIN)
     , _mainObjVram(GFX_OBJ_MAIN)
     , _mainObjDialogVram(GFX_OBJ_MAIN, 128 * 1024)
@@ -41,6 +59,7 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILoca
     , _texturePaletteVram((vu16*)0x6880000)
     , _mainVramContext(nullptr, &_mainObjVram, &_textureVram, &_texturePaletteVram)
     , _subVramContext(nullptr, &_subObjVram, nullptr, nullptr)
+    , _screenshot(&_ioTaskQueue, &_mainObjVram, &_mainObjDialogVram, &_subObjVram)
     , _appSettingsService(appSettingsService)
     , _bgmService(bgmService)
     , _localizationService(localizationService)
@@ -48,8 +67,8 @@ App::App(IAppSettingsService& appSettingsService, IBgmService& bgmService, ILoca
     , _inputRepeater(&_inputProvider,
         InputKey::DpadLeft | InputKey::DpadRight | InputKey::DpadUp | InputKey::DpadDown | InputKey::L | InputKey::R,
         25, 8)
-    , _romBrowserController(&appSettingsService, &_ioTaskQueue, &_bgTaskQueue)
-    , _displaySettingsBottomSheetViewModel(&_romBrowserController, &appSettingsService, &localizationService)
+    , _romBrowserController(&appSettingsService, &gameDataService, &bgmService, &_ioTaskQueue, &_bgTaskQueue)
+    , _displaySettingsBottomSheetViewModel(&_romBrowserController)
     , _romBrowserBottomScreenViewModel(&_romBrowserController)
     , _dialogPresenter(&_focusManager, &_mainObjDialogVram) { }
 
@@ -87,6 +106,63 @@ void App::DisplaySplashScreen() const
     REG_MASTER_BRIGHT_SUB = 0;
 }
 
+// The bottom screen is white from power-on until the browser fades in. This
+// puts the version and build on it meanwhile, small, bottom-right, so a boot
+// says which launcher it is - for the time the theme takes to load, and then
+// for the frames the splash holds. Drawn once here by hand, straight to the
+// hardware, because the main loop and the palette manager's scanline machinery
+// are not running yet; and left untouched by the loop until EndSplashBottom,
+// so the page looks the same for the whole of its time on screen.
+void App::ShowSplashVersion()
+{
+    static DefaultFontRepository sFonts;
+
+    char text[48];
+    FormatLauncherVersion(text, sizeof(text), true);
+
+    _splashVersionLabel = Label2DView::CreateShared(SPLASH_VERSION_WIDTH, 16, 32, sFonts.GetFont(FontType::Medium10));
+    _splashVersionLabel->SetHorizontalAlignment(Alignment::End);
+    _splashVersionLabel->SetPosition(256 - 8 - SPLASH_VERSION_WIDTH, 192 - 8 - 16);
+    _splashVersionLabel->SetBackgroundColor(Rgb<8, 8, 8>(255, 255, 255));
+    _splashVersionLabel->SetForegroundColor(Rgb<8, 8, 8>(110, 112, 120));
+    _splashVersionLabel->InitVram(_mainVramContext);
+    _splashVersionLabel->SetText(text);
+    _splashVersionLabel->VBlank();
+
+    // Static, not a local: Apply copies the rows to palette ram with dma, and
+    // dma cannot read the stack, which lives in dtcm - a local here handed the
+    // sprite a row of garbage and the text came out as a smear of dark pixels.
+    // Row 15 only, since Apply writes every row from the offset up.
+    static SimplePaletteManager sPalette;
+    sPalette.Reset(15);
+    GraphicsContext context
+    {
+        &_mainOam,
+        &sPalette,
+        &_rgb6Palette
+    };
+    _mainOam.Clear();
+    _splashVersionLabel->Draw(context);
+    VBlank::Wait();
+    _mainOam.Apply(GFX_OAM_MAIN);
+    sPalette.Apply(GFX_PLTT_OBJ_MAIN);
+    GFX_PLTT_BG_MAIN[0] = ColorConverter::ToGBGR565(Rgb<8, 8, 8>(255, 255, 255));
+    REG_DISPCNT = SPLASH_BOTTOM_DISPCNT;
+    REG_MASTER_BRIGHT = 0;
+}
+
+// The boot page hands the bottom screen to the browser: backgrounds on, colour
+// 0 the browser's, and master brightness at full white for the fade to start
+// from - the same white the page was, so nothing is seen to change until the
+// browser comes through it.
+void App::EndSplashBottom()
+{
+    _splashBottom = false;
+    GFX_PLTT_BG_MAIN[0] = ColorConverter::ToGBGR565(_theme->GetMaterialColorScheme().inverseOnSurface);
+    REG_DISPCNT = BROWSER_DISPCNT;
+    REG_MASTER_BRIGHT = 0x4010;
+}
+
 void App::LoadTheme()
 {
     ThemeInfoFactory themeInfoFactory;
@@ -112,8 +188,17 @@ void App::VCountIrq()
 
 void App::Run()
 {
+    // The hardware OAM still holds whatever the firmware or the previous
+    // process left in it, and the splash turns the screens on before the
+    // first VBlank copy of our (all-disabled) shadow tables. Without this,
+    // a chunk of stale sprite flashes at the top-left during boot and on
+    // slow theme loads (likely one half of upstream #82).
+    _mainOam.Apply(GFX_OAM_MAIN);
+    _subOam.Apply(GFX_OAM_SUB);
+
     InitVramMapping();
     DisplaySplashScreen();
+    ShowSplashVersion();
     gx_init();
 
     _chipViewVram = ChipView::UploadGraphics(_mainObjVram);
@@ -127,6 +212,12 @@ void App::Run()
 
     LoadTheme();
 
+    // Made before the vram states are stored, so the texture behind its text is
+    // part of what a display mode change restores instead of being dropped by it.
+    _toast = ToastView::CreateShared(&_theme->GetMaterialColorScheme(),
+        _theme->GetFontRepository(), &_vblankTextureLoader);
+    _toast->InitVram(_mainVramContext);
+
     _ioTaskQueue.StartThread(1, _ioTaskThreadStack, sizeof(_ioTaskThreadStack));
     _bgTaskQueue.StartThread(2, _bgTaskThreadStack, sizeof(_bgTaskThreadStack));
 
@@ -138,8 +229,6 @@ void App::Run()
             _romBrowserController.GetRomBrowserDisplaySettings().layout),
         _theme->GetThemeFileIconFactory(),
         _theme->GetRomBrowserViewFactory(),
-        _theme->GetFontRepository(),
-        &_theme->GetMaterialColorScheme(),
         &_vblankTextureLoader);
     _romBrowserBottomScreenView->InitVram(_mainVramContext);
 
@@ -154,9 +243,11 @@ void App::Run()
 
     RgbMixer::MakeGradientPalette((u16*)GFX_PLTT_BG_MAIN, scrimBlendColor, materialColorScheme.GetColor(md::sys::color::surfaceContainerLow));
 
-    GFX_PLTT_BG_MAIN[0] = ColorConverter::ToGBGR565(materialColorScheme.inverseOnSurface);
+    // Colour 0 stays the boot page's white for now, and the backgrounds stay
+    // off: EndSplashBottom gives both to the browser when the page hands over.
+    GFX_PLTT_BG_MAIN[0] = ColorConverter::ToGBGR565(Rgb<8, 8, 8>(255, 255, 255));
     GFX_PLTT_BG_MAIN[31] = ColorConverter::ToGBGR565(materialColorScheme.scrim);
-    REG_DISPCNT = 0x211F1B;
+    REG_DISPCNT = SPLASH_BOTTOM_DISPCNT;
     REG_BG0HOFS = 0;
     REG_BG0VOFS = 0;
     REG_BG0CNT = 3;
@@ -194,7 +285,6 @@ void App::Run()
 
 void App::MainLoop()
 {
-    bool fadeIn = true;
     int fadeWaitFrames = SPLASH_FRAMES;
     while (true)
     {
@@ -212,20 +302,24 @@ void App::MainLoop()
                 break;
             }
         }
-        else if (fadeIn)
+        else if (_fadeIn)
         {
             if (fadeWaitFrames)
             {
                 fadeWaitFrames--;
                 REG_BLDALPHA_SUB = 16;
-                REG_MASTER_BRIGHT = 0x4010;
+                // The bottom screen is the boot page at full brightness; the
+                // white the fade will start from is the page's own.
+                REG_MASTER_BRIGHT = 0;
             }
             else
             {
+                if (_splashBottom)
+                    EndSplashBottom();
                 bool fadeComplete = _fadeAnimator.Update();
                 if (fadeComplete)
                 {
-                    fadeIn = false;
+                    _fadeIn = false;
                     REG_BLDCNT_SUB = 0;
                     REG_DISPCNT_SUB &= ~(1 << 9);
                     REG_MASTER_BRIGHT = 0;
@@ -257,6 +351,13 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
         {
             break;
         }
+        case RomBrowserStateTrigger::LaunchRefused:
+        {
+            // the browser is back where it was, so say why the game did not start
+            if (_toast)
+                _toast->Show("Needs a DSi or 3DS");
+            break;
+        }
         case RomBrowserStateTrigger::ShowGameInfo:
         {
             HandleShowGameInfoTrigger();
@@ -277,6 +378,66 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
             HandleHideDisplaySettingsTrigger();
             break;
         }
+        case RomBrowserStateTrigger::ShowRecents:
+        {
+            HandleShowRecentsTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideRecents:
+        {
+            HandleHideRecentsTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::ShowFavorites:
+        {
+            HandleShowFavoritesTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideFavorites:
+        {
+            HandleHideFavoritesTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::ShowStatistics:
+        {
+            HandleShowStatisticsTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideStatistics:
+        {
+            HandleHideStatisticsTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::ShowDeleteConfirm:
+        {
+            HandleShowDeleteConfirmTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideDeleteConfirm:
+        {
+            HandleHideDeleteConfirmTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::ShowMenu:
+        {
+            HandleShowMenuTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideMenu:
+        {
+            HandleHideMenuTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::ShowAbout:
+        {
+            HandleShowAboutTrigger();
+            break;
+        }
+        case RomBrowserStateTrigger::HideAbout:
+        {
+            HandleHideAboutTrigger();
+            break;
+        }
         case RomBrowserStateTrigger::Navigate:
         {
             HandleNavigateTrigger();
@@ -289,6 +450,9 @@ void App::HandleTrigger(RomBrowserStateTrigger trigger, RomBrowserState newState
         }
         case RomBrowserStateTrigger::ChangeDisplayMode:
         {
+            // a filter toggled from the menu: the browser rebuilds and the
+            // menu's sheet goes, in that order (see Update)
+            CloseSheetIfLeavingMenu();
             _changeDisplayMode = true;
             break;
         }
@@ -304,7 +468,8 @@ void App::HandleShowGameInfoTrigger()
 
     auto cheatsViewModel = SharedPtr<CheatsViewModel>::MakeShared(_romBrowserController.GetTriggerFileInfo(), &_romBrowserController);
     auto cheatsDialog = CheatsBottomSheetView::CreateShared(
-        std::move(cheatsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager, _localizationService);
+        std::move(cheatsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(),
+        &_focusManager, _localizationService);
     _dialogPresenter.ShowDialog(std::move(cheatsDialog));
 }
 
@@ -318,8 +483,8 @@ void App::HandleHideGameInfoTrigger()
 void App::HandleShowDisplaySettingsTrigger()
 {
     auto displaySettingsDialog = DisplaySettingsBottomSheetView::CreateShared(
-        &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
-    displaySettingsDialog->SetGraphics(_iconButtonViewVram, _chipViewVram);
+        &_displaySettingsBottomSheetViewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    displaySettingsDialog->SetGraphics(_iconButtonViewVram);
     _dialogPresenter.ShowDialog(std::move(displaySettingsDialog));
 }
 
@@ -330,10 +495,143 @@ void App::HandleHideDisplaySettingsTrigger()
         _romBrowserBottomScreenView->Focus(_focusManager);
 }
 
+void App::HandleShowRecentsTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto recentsViewModel = SharedPtr<RecentsViewModel>::MakeShared(
+        &_romBrowserController, GameListKind::Recents);
+    auto recentsDialog = RecentsBottomSheetView::CreateShared(
+        std::move(recentsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager);
+    _dialogPresenter.ShowDialog(std::move(recentsDialog));
+}
+
+void App::HandleHideRecentsTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowFavoritesTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto favoritesViewModel = SharedPtr<RecentsViewModel>::MakeShared(
+        &_romBrowserController, GameListKind::Favorites);
+    auto favoritesDialog = RecentsBottomSheetView::CreateShared(
+        std::move(favoritesViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), &_focusManager);
+    _dialogPresenter.ShowDialog(std::move(favoritesDialog));
+}
+
+void App::HandleHideFavoritesTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowStatisticsTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto statisticsViewModel = SharedPtr<StatisticsViewModel>::MakeShared(&_romBrowserController);
+    auto statisticsDialog = StatisticsBottomSheetView::CreateShared(
+        std::move(statisticsViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(statisticsDialog));
+}
+
+void App::HandleHideStatisticsTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowDeleteConfirmTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto deleteConfirmViewModel = SharedPtr<DeleteConfirmViewModel>::MakeShared(&_romBrowserController);
+    auto deleteConfirmDialog = DeleteConfirmBottomSheetView::CreateShared(
+        std::move(deleteConfirmViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(deleteConfirmDialog));
+}
+
+void App::HandleHideDeleteConfirmTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleShowMenuTrigger()
+{
+    auto menuViewModel = SharedPtr<MenuViewModel>::MakeShared(&_romBrowserController);
+    auto menuDialog = MenuBottomSheetView::CreateShared(
+        std::move(menuViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    menuDialog->SetGraphics(_iconButtonViewVram);
+    _dialogPresenter.ShowDialog(std::move(menuDialog));
+}
+
+void App::HandleShowAboutTrigger()
+{
+    CloseSheetIfLeavingMenu();
+    auto aboutViewModel = SharedPtr<AboutViewModel>::MakeShared(&_romBrowserController);
+    auto aboutDialog = AboutBottomSheetView::CreateShared(
+        std::move(aboutViewModel), &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _dialogPresenter.ShowDialog(std::move(aboutDialog));
+}
+
+void App::HandleHideAboutTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+void App::HandleHideMenuTrigger()
+{
+    _dialogPresenter.CloseDialog();
+    if (!_dialogPresenter.GetOldFocus())
+        _romBrowserBottomScreenView->Focus(_focusManager);
+}
+
+// An entry picked from the menu takes the menu's sheet with it. Closing it and
+// showing the next sheet in the same frame is fine: the presenter keeps the
+// new one waiting until the old one has slid out, and Update holds input off
+// meanwhile, so nothing can navigate away under a sheet that is still queued.
+void App::CloseSheetIfLeavingMenu()
+{
+    if (_romBrowserController.GetStateMachine().GetPreviousState() == RomBrowserState::Menu)
+        _dialogPresenter.CloseDialog();
+}
+
 void App::HandleNavigateTrigger()
 {
+    // navigation can also start from inside the recents/favorites/delete sheets
+    auto previousState = _romBrowserController.GetStateMachine().GetPreviousState();
+    if (previousState == RomBrowserState::Recents || previousState == RomBrowserState::Favorites ||
+        previousState == RomBrowserState::DeleteConfirm)
+    {
+        _dialogPresenter.CloseDialog();
+        // Focus stays on the app-bar button while the sheet closes (the presenter
+        // restores it) - never null, so input is never lost. Once the folder is
+        // loaded we move focus to the game instead, so the next A launches it and
+        // does not reopen the panel. Nulling focus here (across the close+load
+        // window) is what froze the launcher, so we flag it for later instead.
+        _focusListAfterFolderLoad = true;
+    }
     if (!_romBrowserBottomScreenView->IsAppBarFocused(_focusManager))
+    {
         _focusManager.Unfocus();
+    }
+    else
+    {
+        // The app bar already holds focus, so the clear above is skipped and the
+        // handoff below would never fire: FolderLoadDone only takes over when
+        // focus is null. That is how stepping out of an EMPTY folder used to
+        // strand the highlight on the back button - an empty listing has no row
+        // to focus, so Focus() had fallen back to the app bar on the way in.
+        // Flag it instead of nulling here, for the same reason as the panels.
+        _focusListAfterFolderLoad = true;
+    }
 }
 
 void App::HandleFolderLoadDoneTrigger()
@@ -346,11 +644,21 @@ void App::HandleFolderLoadDoneTrigger()
         _romBrowserController.GetRomBrowserViewModel(),
         displayMode,
         _theme->GetThemeFileIconFactory(),
-        _theme->GetRomBrowserViewFactory());
+        _theme->GetRomBrowserViewFactory(),
+        _theme->GetFontRepository(),
+        &_theme->GetMaterialColorScheme());
     _romBrowserTopScreenView->InitVram(_subVramContext);
     _romBrowserBottomScreenView->RomBrowserViewModelInvalidated(_mainVramContext);
-    if (!_focusManager.GetCurrentFocus())
+    // Normally focus is null here (the navigated-from list row was destroyed) and
+    // this puts it on the newly loaded folder. When the navigation started with
+    // the app bar focused - from a panel, from the back arrow, or from a folder
+    // whose listing was empty - focus is still on that button, so the flag makes
+    // us move it onto the entry instead: a straight app-bar -> list handoff,
+    // never through null. Focus() falls back to the app bar on its own if the
+    // folder that just loaded has nothing to put the highlight on.
+    if (_focusListAfterFolderLoad || !_focusManager.GetCurrentFocus())
         _romBrowserBottomScreenView->Focus(_focusManager);
+    _focusListAfterFolderLoad = false;
 }
 
 void App::HandleChangeDisplayModeTrigger(RomBrowserState newState)
@@ -364,8 +672,6 @@ void App::HandleChangeDisplayModeTrigger(RomBrowserState newState)
         displayMode,
         _theme->GetThemeFileIconFactory(),
         _theme->GetRomBrowserViewFactory(),
-        _theme->GetFontRepository(),
-        &_theme->GetMaterialColorScheme(),
         &_vblankTextureLoader);
     _romBrowserBottomScreenView->InitVram(_mainVramContext);
     StoreVramState(_vramStateAfterMakeBottomScreenView);
@@ -373,7 +679,9 @@ void App::HandleChangeDisplayModeTrigger(RomBrowserState newState)
         _romBrowserController.GetRomBrowserViewModel(),
         displayMode,
         _theme->GetThemeFileIconFactory(),
-        _theme->GetRomBrowserViewFactory());
+        _theme->GetRomBrowserViewFactory(),
+        _theme->GetFontRepository(),
+        &_theme->GetMaterialColorScheme());
     _romBrowserTopScreenView->InitVram(_subVramContext);
     _romBrowserBottomScreenView->RomBrowserViewModelInvalidated(_mainVramContext);
     if (newState == RomBrowserState::Browser)
@@ -382,6 +690,55 @@ void App::HandleChangeDisplayModeTrigger(RomBrowserState newState)
 
 void App::Update()
 {
+    // Copying the captured frame out of vram is far too long for vblank, so it
+    // happens here, in the visible period.
+    _screenshot.Update();
+
+    // The io thread is what finishes a capture, so the answer turns up a few
+    // frames after the shutter. Saying so only once it is on the card means the
+    // message is true, and it also puts it safely outside the picture.
+    if (_toast)
+    {
+        // An L/R jump crosses the list by whole initials, which is easy to lose
+        // your place in, so the letter landed on is said for a moment. The flag
+        // is drained every frame whether or not there is anything to show, so a
+        // jump is never kept to be announced later. It is read here, before
+        // this frame's input, so the jump it sees is last frame's - and by the
+        // end of that frame the browser view had already written the new
+        // selection back into the view model, which is where the name is read.
+        //
+        // Before the screenshot below on purpose: only one message shows at a
+        // time and the newest wins, and of the two the letter is the one that
+        // will be along again.
+        if (_romBrowserController.ConsumeBigStepJump())
+        {
+            const auto& viewModel = _romBrowserController.GetRomBrowserViewModel();
+            int selectedItem = viewModel->GetSelectedItem();
+            if (selectedItem >= 0)
+            {
+                char letter[2] = { (char)toupper((unsigned char)
+                    viewModel->GetFileInfoManager().GetItem(selectedItem).GetFileName()[0]), 0 };
+                _toast->Show(letter);
+            }
+        }
+
+        switch (Screenshot::TakeResult())
+        {
+            case Screenshot::Result::Saved:
+                _toast->Show("Screenshot saved");
+                break;
+            case Screenshot::Result::Failed:
+                _toast->Show("Couldn't save the screenshot");
+                break;
+            case Screenshot::Result::Busy:
+                _toast->Show("Still saving the last one");
+                break;
+            case Screenshot::Result::None:
+                break;
+        }
+        _toast->Update();
+    }
+
     const auto& stateMachine = _romBrowserController.GetStateMachine();
     _romBrowserController.Update();
     auto curState = stateMachine.GetCurrentState();
@@ -398,7 +755,8 @@ void App::Update()
     bool isRomBrowserVisible = _romBrowserBottomScreenViewModel.IsRomBrowserVisible();
     if (isRomBrowserVisible && !_exit &&
         curState != RomBrowserState::Launching &&
-        curState != RomBrowserState::GoingToSettingsScreen)
+        curState != RomBrowserState::GoingToSettingsScreen &&
+        !_dialogPresenter.IsSwitchingDialog())
     {
         HandleInput();
     }
@@ -448,22 +806,51 @@ void App::Draw()
 
     if (_topBackground)
         _topBackground->Draw(subGraphicsContext);
-    if (_bottomBackground)
-        _bottomBackground->Draw(mainGraphicsContext);
-
     if (!_changeDisplayMode && _romBrowserBottomScreenViewModel.IsRomBrowserVisible())
     {
         _romBrowserTopScreenView->Draw(subGraphicsContext);
     }
 
-    _dialogPresenter.ApplyClipArea(mainGraphicsContext);
-    if (!_changeDisplayMode)
+    if (_splashBottom)
     {
-        _romBrowserBottomScreenView->Draw(mainGraphicsContext);
+        // The boot page is what ShowSplashVersion put in the hardware oam and
+        // palette, and it stays exactly that until EndSplashBottom: nothing is
+        // drawn on this engine and VBlank leaves its oam and palette alone, so
+        // the page cannot change its look between the theme loading and the
+        // splash holding. The browser is not drawn either: with the
+        // backgrounds off, its sprites would be the only part of it to show.
     }
-    mainGraphicsContext.ResetClipArea();
+    else
+    {
+        if (_bottomBackground)
+            _bottomBackground->Draw(mainGraphicsContext);
 
-    _dialogPresenter.Draw(mainGraphicsContext);
+        _dialogPresenter.ApplyClipArea(mainGraphicsContext);
+        if (!_changeDisplayMode)
+        {
+            _romBrowserBottomScreenView->Draw(mainGraphicsContext);
+        }
+        mainGraphicsContext.ResetClipArea();
+
+        _dialogPresenter.Draw(mainGraphicsContext);
+    }
+
+    // Last, so nothing the browser draws afterwards can land on top of it. And
+    // not at all while a screenshot has this engine: on the frame it is actually
+    // mirrored, anything of ours drawn here would end up in that picture instead
+    // of on this one.
+    //
+    // The test is deliberately wider than that one frame - it is true from the
+    // moment the top half is queued until the mirror is handed back. Being too
+    // wide costs a frame or two of a message that is inside the capture's flash
+    // anyway; being too narrow puts the message inside a saved screenshot.
+    if (_toast)
+    {
+        if (_screenshot.IsMirroringMainEngine())
+            _toast->Suppress();
+        else
+            _toast->Draw(mainGraphicsContext);
+    }
 
     _mainObjPltt.EndOfFrame();
 
@@ -473,9 +860,14 @@ void App::Draw()
 void App::VBlank()
 {
     dma_ntrStopDirect(0); // stop hblank dma
+    // Arms a pending bottom screen capture for the frame whose sprites go up a
+    // few lines down, so the saved image is the one the player asked for.
+    _screenshot.VBlankBegin();
     _inputProvider.Sample();
     _inputRepeater.Update();
-    _mainOam.Apply(GFX_OAM_MAIN);
+    // The main engine keeps the boot page as drawn until the fade begins.
+    if (!_splashBottom)
+        _mainOam.Apply(GFX_OAM_MAIN);
     _subOam.Apply(GFX_OAM_SUB);
     _subObjPltt.Apply(GFX_PLTT_OBJ_SUB);
 
@@ -485,7 +877,18 @@ void App::VBlank()
         rtos_enableIrqMask(RTOS_IRQ_VCOUNT);
         _vcountIrqStarted = true;
     }
-    _mainObjPltt.VBlank();
+    // Left alone from the moment the top half is queued until the mirror is
+    // handed back, which is wider than the frame the palette is actually the
+    // other screen's - on the first of those frames nothing has been mirrored
+    // yet, since that happens further down this same function. Wider on
+    // purpose, for the reason in Draw: too narrow writes into a saved image.
+    // Runs during the boot page too: its scheme is empty then, so it writes no
+    // palette row and leaves the page's own, but it is what arms the scanline
+    // walk the vcount irq performs - which fires from the first frame when the
+    // theme selector left the match line enabled, and would otherwise walk a
+    // null scheme and hang.
+    if (!_screenshot.IsMirroringMainEngine())
+        _mainObjPltt.VBlank();
 
     if (_topBackground)
         _topBackground->VBlank();
@@ -494,13 +897,35 @@ void App::VBlank()
 
     _dialogPresenter.VBlank();
 
-    if (_romBrowserBottomScreenViewModel.IsRomBrowserVisible())
+    // Above the mirroring below, and it has to stay there: this writes the main
+    // engine's window and display control registers, which from the next
+    // statement on belong to the capture.
+    if (_toast)
+        _toast->VBlank();
+
+    // While a screenshot borrows sub background vram, the top screen view has
+    // to sit out: it uploads the selected cover there and marks it done, so an
+    // upload during those frames would be lost for good. Skipping means it
+    // simply retries once the block is back.
+    if (_romBrowserBottomScreenViewModel.IsRomBrowserVisible() && !_screenshot.IsBusy())
     {
         _romBrowserTopScreenView->VBlank();
     }
     _romBrowserBottomScreenView->VBlank();
 
     _vblankTextureLoader.VBlank();
+
+    // Mirroring the sub engine onto the main one has to be the last word on the
+    // frame: it needs this frame's sub sprites uploaded, and every register it
+    // copies would otherwise be written over again below. The cover's matrix and
+    // window cannot be read back off the sub engine, so the view that computes
+    // them restates them in between.
+    if (_screenshot.MirrorSubEngineIfPending())
+    {
+        if (_romBrowserTopScreenView)
+            _romBrowserTopScreenView->MirrorToMainEngine();
+        _screenshot.ArmMirroredCapture();
+    }
 }
 
 void App::StoreVramState(VramState& vramState) const
@@ -521,7 +946,64 @@ void App::RestoreVramState(const VramState& vramState)
 
 void App::HandleInput()
 {
-    _focusManager.Update(_inputRepeater);
+    // Hold START to save both screens. One key rather than one per screen, and
+    // not SELECT: the dsi changes its brightness with SELECT and the volume
+    // buttons, and those are not readable in ds mode, so a player adjusting
+    // brightness would be taking screenshots without asking for any. START does
+    // nothing on any model of the family while software is running.
+    //
+    // The hold has to begin here: counting only once the key has been seen up
+    // means a hold that started before the launcher did cannot be read as a
+    // request, whatever it is held for. Counting frames of Current() rather
+    // than using Triggered() keeps one hold to one shot.
+    //
+    // What named this case was the 3ds, where holding START from the home menu
+    // is how a ds game is started at its native resolution. Whether the key can
+    // still be down by the time this runs is left open on purpose: it was not
+    // reproducible on the console it was tried on, which restarts rather than
+    // reaching the launcher if START is never released, and one console is not
+    // evidence about the rest. The guard is cheap and it also covers the cases
+    // that do not need that question answered - a key that sticks, a thumb
+    // resting on it, arriving here from another launcher.
+    //
+    // And no frames are counted while the opening fade is running, because that
+    // fade writes master brightness every frame, after this - the same register
+    // the capture blacks the bottom screen out with. A capture that started in
+    // there would have its blackout overwritten every frame, and worse, would
+    // save a half faded brightness and put it back once the fade had stopped
+    // writing: the bottom screen would then stay dimmed for the rest of the
+    // session, with nothing left to correct it.
+    //
+    // The test sits after the armed one on purpose. Suppressing the count is
+    // not the same as arming: doing it in the branch above would mark a key
+    // that is still held as armed, which is exactly what that branch exists to
+    // prevent.
+    if (!_inputRepeater.Current(InputKey::Start))
+    {
+        _screenshotHoldFrames = 0;
+        _screenshotHoldArmed = true;
+    }
+    else if (_screenshotHoldArmed && !_fadeIn &&
+        ++_screenshotHoldFrames == kScreenshotHoldFrames)
+    {
+        _screenshot.RequestBothScreens();
+    }
+
+    if (!_dialogPresenter.IsBottomSheetVisible() &&
+        _inputRepeater.Triggered(InputKey::A) && _inputRepeater.Current(InputKey::Select))
+    {
+        // SELECT + A launches a random game. The chord is claimed here, before
+        // the focused view sees the frame, because dispatch is leaf first and
+        // the highlighted game or app bar button would take the A press
+        // otherwise. It is a chord rather than a bare SELECT because on the
+        // DSi SELECT + volume is the brightness shortcut, so SELECT on its own
+        // must not launch anything.
+        _romBrowserBottomScreenViewModel.LaunchRandomGame();
+    }
+    else
+    {
+        _focusManager.Update(_inputRepeater);
+    }
     Point touchPoint;
     if (_inputRepeater.Triggered(InputKey::Touch) &&
         _inputRepeater.GetCurrentTouchPoint(touchPoint))

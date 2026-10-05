@@ -11,7 +11,6 @@ public:
     struct alignas(32) ExtraThemeInfo
     {
         u16 previewImage[256 * 192];
-        bool hasPreview = false;
         std::unique_ptr<ThemeInfo> themeInfo;
         SharedPtr<BmpFileIconData> iconData;
     };
@@ -20,8 +19,9 @@ public:
 
     SharedPtr<ExtraThemeInfo> GetExtraThemeInfo(int index) const
     {
-        if (index < 0 || (u32)index >= _themeRepository.GetThemeCount())
-            return nullptr;
+        // -1 is what an empty list reports as its selection
+        if (index < 0 || (u32)index >= GetItemCount())
+            return SharedPtr<ExtraThemeInfo>();
         return _extraThemeInfo[index].Lock();
     }
 

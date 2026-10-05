@@ -41,6 +41,11 @@ RomBrowserViewModel::RomBrowserViewModel(IRomBrowserController* romBrowserContro
             break;
         }
     }
+    filterSortParams.favoritesOnly = romBrowserController->IsFavoritesFilterEnabled();
+    filterSortParams.completedOnly = romBrowserController->IsCompletedFilterEnabled();
+    filterSortParams.hideEmptyFolders = romBrowserController->GetRomBrowserDisplaySettings().hideEmptyFolders;
+    filterSortParams.hideSavesFolders = romBrowserController->GetSaveLocation() == SaveLocation::SavesFolder;
+    filterSortParams.gameDataService = romBrowserController->GetGameDataService();
     u64 startTick = gTickCounter.GetValue();
     const auto& sdFolder = romBrowserController->GetSdFolder();
     u32 filteredCount;

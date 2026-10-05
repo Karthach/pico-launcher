@@ -1,19 +1,13 @@
 #pragma once
 #include "../IRomBrowserController.h"
-#include "services/localization/ILocalizationService.h"
 #include "services/settings/RomBrowserDisplaySettings.h"
-
-#include "services/settings/IAppSettingsService.h"
 
 /// @brief View model for the display settings screen.
 class DisplaySettingsViewModel
 {
 public:
-    DisplaySettingsViewModel(IRomBrowserController* romBrowserController, IAppSettingsService* appSettingsService,
-        ILocalizationService* localizationService)
+    explicit DisplaySettingsViewModel(IRomBrowserController* romBrowserController)
         : _romBrowserController(romBrowserController)
-        , _appSettingsService(appSettingsService)
-        , _localizationService(localizationService)
         , _romBrowserDisplaySettings(_romBrowserController->GetRomBrowserDisplaySettings()) { }
 
     constexpr RomBrowserLayout GetRomBrowserDisplayMode() const
@@ -44,20 +38,33 @@ public:
         }
     }
 
-    const char* GetLanguage() const
+    constexpr bool GetHideEmptyFolders() const
     {
-        return _appSettingsService->GetAppSettings().language.GetString();
+        return _romBrowserDisplaySettings.hideEmptyFolders;
     }
 
-    void SetLanguage(const char* language)
+    void SetHideEmptyFolders(bool hideEmptyFolders)
     {
-        if (strcmp(_appSettingsService->GetAppSettings().language.GetString(), language) != 0)
+        if (_romBrowserDisplaySettings.hideEmptyFolders != hideEmptyFolders)
         {
-            _appSettingsService->GetAppSettings().language = language;
-            _appSettingsService->Save();
-            _localizationService->Reload();
-            _romBrowserController->RestartForLanguageChange();
+            _romBrowserDisplaySettings.hideEmptyFolders = hideEmptyFolders;
+            _romBrowserController->SetRomBrowserDisplaySettings(_romBrowserDisplaySettings);
         }
+    }
+
+    int GetBacklightLevel() const
+    {
+        return _romBrowserController->GetBacklightLevel();
+    }
+
+    void SetBacklightLevel(int level)
+    {
+        _romBrowserController->SetBacklightLevel(level);
+    }
+
+    bool HasBacklightLevels() const
+    {
+        return _romBrowserController->HasBacklightLevels();
     }
 
     void Close()
@@ -72,7 +79,5 @@ public:
 
 private:
     IRomBrowserController* _romBrowserController;
-    IAppSettingsService* _appSettingsService;
-    ILocalizationService* _localizationService;
     RomBrowserDisplaySettings _romBrowserDisplaySettings;
 };

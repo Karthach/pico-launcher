@@ -2,6 +2,7 @@
 #include <string.h>
 #include <algorithm>
 #include "FileType/InternalFileInfo.h"
+#include "services/gamedata/IGameDataService.h"
 #include "SdFolder.h"
 
 static int CompareTitleStrings(const char16_t* a, const char16_t* b)
@@ -16,8 +17,8 @@ static int CompareTitleStrings(const char16_t* a, const char16_t* b)
         if (charA >= u'A' && charA <= u'Z') charA += u'a' - u'A';
         if (charB >= u'A' && charB <= u'Z') charB += u'a' - u'A';
         if (charA != charB) return (int)charA - (int)charB;
-        a++;
-        b++;
+        ++a;
+        ++b;
     }
     return (int)*a - (int)*b;
 }
@@ -42,126 +43,112 @@ std::unique_ptr<const FileInfo*[]> SdFolder::FilterAndSort(
         const FileInfo* file = _files[i];
         bool isHidden = file->GetFileName()[0] == '.' || file->IsHidden();
         auto classification = file->GetFileType()->GetClassification();
-        if (classification != FileTypeClassification::Unknown &&
-            (!isHidden || filterSortParams.includeHiddenFiles))
+        if (classification == FileTypeClassification::Unknown ||
+            (isHidden && !filterSortParams.includeHiddenFiles))
         {
-            sortedFilteredFiles[filteredCount++] = file;
+            continue;
         }
+        if (filterSortParams.hideSavesFolders && classification == FileTypeClassification::Folder &&
+            !strcasecmp(file->GetFileName(), "saves"))
+        {
+            continue;
+        }
+        if (filterSortParams.favoritesOnly && filterSortParams.gameDataService &&
+            classification != FileTypeClassification::Folder)
+        {
+            const auto* entry = filterSortParams.gameDataService->GetEntry(file->GetFileName());
+            if (!entry || !entry->favorite)
+                continue;
+        }
+        if (filterSortParams.completedOnly && filterSortParams.gameDataService &&
+            classification != FileTypeClassification::Folder)
+        {
+            const auto* entry = filterSortParams.gameDataService->GetEntry(file->GetFileName());
+            if (!entry || !entry->completed)
+                continue;
+        }
+        if (filterSortParams.hideEmptyFolders &&
+            classification == FileTypeClassification::Folder && file->IsEmptyFolder())
+        {
+            continue;
+        }
+        sortedFilteredFiles[filteredCount++] = file;
     }
-
     if (filterSortParams.sortType == SdFolderSortType::Title)
     {
-        struct TitleEntry
+        struct TitleEntry { const FileInfo* fileInfo; std::unique_ptr<char16_t[]> title; };
+        auto entries = std::make_unique<TitleEntry[]>(filteredCount);
+        for (u32 i = 0; i < filteredCount; ++i)
         {
-            const FileInfo* fileInfo;
-            std::unique_ptr<char16_t[]> title;
-        };
-
-        auto titleEntries = std::make_unique<TitleEntry[]>(filteredCount);
-        for (int i = 0; i < filteredCount; i++)
-        {
-            titleEntries[i].fileInfo = sortedFilteredFiles[i];
-            auto internalFileInfo = std::unique_ptr<InternalFileInfo>(
-                titleEntries[i].fileInfo->CreateInternalFileInfo());
-            const char16_t* title = internalFileInfo ? internalFileInfo->GetGameTitle() : nullptr;
+            entries[i].fileInfo = sortedFilteredFiles[i];
+            auto info = std::unique_ptr<InternalFileInfo>(entries[i].fileInfo->CreateInternalFileInfo());
+            const char16_t* title = info ? info->GetGameTitle() : nullptr;
             if (title)
             {
                 u32 len = 0;
-                while (title[len]) len++;
-                titleEntries[i].title = std::make_unique<char16_t[]>(len + 1);
-                for (u32 j = 0; j <= len; j++) titleEntries[i].title[j] = title[j];
+                while (title[len]) ++len;
+                entries[i].title = std::make_unique<char16_t[]>(len + 1);
+                for (u32 j = 0; j <= len; ++j) entries[i].title[j] = title[j];
             }
         }
-
-        std::sort(titleEntries.get(), titleEntries.get() + filteredCount,
+        std::sort(entries.get(), entries.get() + filteredCount,
             [filterSortParams] (const TitleEntry& a, const TitleEntry& b)
             {
                 bool result = true;
-                if (CompareClassification(a.fileInfo, b.fileInfo, result))
-                    return result;
-
-                if (a.fileInfo->GetFileType()->GetClassification() == FileTypeClassification::Folder &&
-                    b.fileInfo->GetFileType()->GetClassification() == FileTypeClassification::Folder)
-                {
+                if (CompareClassification(a.fileInfo, b.fileInfo, result)) return result;
+                if (a.fileInfo->GetFileType()->GetClassification() == FileTypeClassification::Folder)
                     return CompareName(a.fileInfo, b.fileInfo);
-                }
-
                 int cmp = CompareTitleStrings(a.title.get(), b.title.get());
                 if (cmp == 0)
                 {
-                    if (CompareName(a.fileInfo, b.fileInfo))
-                        cmp = -1;
-                    else if (CompareName(b.fileInfo, a.fileInfo))
-                        cmp = 1;
+                    if (CompareName(a.fileInfo, b.fileInfo)) cmp = -1;
+                    else if (CompareName(b.fileInfo, a.fileInfo)) cmp = 1;
                 }
-
-                return filterSortParams.sortDirection == SdFolderSortDirection::Ascending
-                    ? cmp < 0
-                    : cmp > 0;
+                return filterSortParams.sortDirection == SdFolderSortDirection::Ascending ? cmp < 0 : cmp > 0;
             });
-
-        for (int i = 0; i < filteredCount; i++)
-            sortedFilteredFiles[i] = titleEntries[i].fileInfo;
+        for (u32 i = 0; i < filteredCount; ++i) sortedFilteredFiles[i] = entries[i].fileInfo;
     }
-    else
-    {
-        std::sort(sortedFilteredFiles.get(), sortedFilteredFiles.get() + filteredCount,
-            [filterSortParams] (const FileInfo*& a, const FileInfo*& b)
+    else std::sort(sortedFilteredFiles.get(), sortedFilteredFiles.get() + filteredCount,
+        [filterSortParams] (const FileInfo*& a, const FileInfo*& b)
+        {
+            bool result = true;
+            if (CompareClassification(a, b, result))
+                return result;
+
+            auto sortType = filterSortParams.sortType;
+            auto sortDirection = filterSortParams.sortDirection;
+            if (a->GetFileType()->GetClassification() == FileTypeClassification::Folder &&
+                b->GetFileType()->GetClassification() == FileTypeClassification::Folder)
             {
-                bool result = true;
-                if (CompareClassification(a, b, result))
-                    return result;
-
-                auto sortType = filterSortParams.sortType;
-                auto sortDirection = filterSortParams.sortDirection;
-                if (a->GetFileType()->GetClassification() == FileTypeClassification::Folder &&
-                    b->GetFileType()->GetClassification() == FileTypeClassification::Folder)
+                if (sortType != SdFolderSortType::Name)
                 {
-                    if (sortType != SdFolderSortType::Name)
-                    {
-                        sortType = SdFolderSortType::Name;
-                        sortDirection = SdFolderSortDirection::Ascending;
-                    }
+                    sortType = SdFolderSortType::Name;
+                    sortDirection = SdFolderSortDirection::Ascending;
                 }
-                int cmp = 0;
-                switch (sortType)
+            }
+            int cmp = 0;
+            switch (sortType)
+            {
+                case SdFolderSortType::Name:
+                default:
                 {
-                    case SdFolderSortType::Name:
-                    {
-                        if (CompareName(a, b))
-                            cmp = -1;
-                        else if (CompareName(b, a))
-                            cmp = 1;
-                        break;
-                    }
-                    case SdFolderSortType::LastModified:
-                    {
-                        u32 aTimestamp = a->GetFastFileRef().GetLastModifiedTimestamp();
-                        u32 bTimestamp = b->GetFastFileRef().GetLastModifiedTimestamp();
-                        if (aTimestamp < bTimestamp)
-                            cmp = -1;
-                        else if (aTimestamp > bTimestamp)
-                            cmp = 1;
-                        else if (CompareName(a, b))
-                            cmp = -1;
-                        else if (CompareName(b, a))
-                            cmp = 1;
-                        break;
-                    }
-                    default:
-                    {
-                        if (CompareName(a, b))
-                            cmp = -1;
-                        else if (CompareName(b, a))
-                            cmp = 1;
-                        break;
-                    }
+                    if (CompareName(a, b)) cmp = -1;
+                    else if (CompareName(b, a)) cmp = 1;
+                    break;
                 }
-                return sortDirection == SdFolderSortDirection::Ascending
-                    ? cmp < 0
-                    : cmp > 0;
-            });
-    }
+                case SdFolderSortType::LastModified:
+                {
+                    const u32 at = a->GetFastFileRef().GetLastModifiedTimestamp();
+                    const u32 bt = b->GetFastFileRef().GetLastModifiedTimestamp();
+                    if (at < bt) cmp = -1;
+                    else if (at > bt) cmp = 1;
+                    else if (CompareName(a, b)) cmp = -1;
+                    else if (CompareName(b, a)) cmp = 1;
+                    break;
+                }
+            }
+            return sortDirection == SdFolderSortDirection::Ascending ? cmp < 0 : cmp > 0;
+        });
     resultCount = filteredCount;
     return sortedFilteredFiles;
 }

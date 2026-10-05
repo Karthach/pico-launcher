@@ -11,7 +11,9 @@ MaterialAppBarView::MaterialAppBarView(int x, int y, Orientation orientation,
     {
         _buttons[i] = IconButton2DView::CreateShared(
             IconButtonView::Type::Standard,
-            IconButtonView::State::NoToggle,
+            // never selected: focus shows as the accent icon and veil, the rule
+            // every icon button follows (see IconButtonView.h)
+            IconButtonView::State::ToggleUnselected,
             md::sys::color::inverseOnSurface,
             materialColorScheme);
         AddChildTail(_buttons[i].GetPointer());

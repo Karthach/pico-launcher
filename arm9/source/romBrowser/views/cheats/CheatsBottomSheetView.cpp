@@ -27,6 +27,14 @@
 #define DESCRIPTION_LABEL_X         16
 #define DESCRIPTION_LABEL_Y         147
 
+// Shares the description row, right-aligned: the sheet opens at y=32, so the
+// strip below the list (16px) is the only room left and a full prompt bar
+// would cost list rows. One permanent hint for the one binding nobody finds
+// on their own (upstream #83: the author asked for "disable all" and it was
+// already there, on X).
+#define PROMPTS_LABEL_X             184
+#define PROMPTS_LABEL_Y             DESCRIPTION_LABEL_Y
+
 #define UP_BUTTON_X                 212
 #define UP_BUTTON_Y                 (TITLE_LABEL_Y - 7)
 
@@ -41,7 +49,8 @@ CheatsBottomSheetView::CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewMode
     : _viewModel(std::move(viewModel))
     , _titleLabel(Label2DView::CreateShared(64, 16, 25, fontRepository->GetFont(FontType::Medium11)))
     , _secondaryLabel(Label2DView::CreateShared(153, 16, 64, fontRepository->GetFont(FontType::Regular10)))
-    , _descriptionLabel(Label2DView::CreateShared(224, 16, 256, fontRepository->GetFont(FontType::Medium7_5)))
+    , _descriptionLabel(Label2DView::CreateShared(164, 16, 256, fontRepository->GetFont(FontType::Medium7_5)))
+    , _promptsLabel(Label2DView::CreateShared(56, 16, 12, fontRepository->GetFont(FontType::Medium7_5)))
     , _cheatListRecycler(RecyclerView::CreateShared(
         LIST_X, LIST_Y, LIST_WIDTH, LIST_HEIGHT, RecyclerView::Mode::VerticalList))
     , _upButton(IconButton2DView::CreateShared(
@@ -58,10 +67,13 @@ CheatsBottomSheetView::CheatsBottomSheetView(SharedPtr<CheatsViewModel> viewMode
     _secondaryLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Ellipsis);
     _descriptionLabel->SetEllipsisStyle(LabelView::EllipsisStyle::Marquee);
     _descriptionLabel->SetText(u"");
+    _promptsLabel->SetText(u"X: all off");
     AddChildTail(_titleLabel.GetPointer());
     AddChildTail(_secondaryLabel.GetPointer());
     AddChildTail(_descriptionLabel.GetPointer());
+    AddChildTail(_promptsLabel.GetPointer());
     AddChildTail(_cheatListRecycler.GetPointer());
+    _cheatListRecycler->SetWrapAround(true);
     _upButton->SetAction([] (IconButtonView*, void* arg)
     {
         ((CheatsBottomSheetView*)arg)->_viewModel->NavigateUp();
@@ -112,6 +124,7 @@ void CheatsBottomSheetView::Update()
         _secondaryLabel->SetPosition(NO_CHEATS_FOUND_LABEL_X, _position.y + NO_CHEATS_FOUND_LABEL_Y);
     }
     _descriptionLabel->SetPosition(DESCRIPTION_LABEL_X, _position.y + DESCRIPTION_LABEL_Y);
+    _promptsLabel->SetPosition(PROMPTS_LABEL_X, _position.y + PROMPTS_LABEL_Y);
     _cheatListRecycler->SetPosition(LIST_X, _position.y + LIST_Y);
     _upButton->SetPosition(UP_BUTTON_X, _position.y + UP_BUTTON_Y);
     if (_viewModel->GetState() == CheatsViewModel::State::DisplayCheats)
@@ -217,6 +230,15 @@ void CheatsBottomSheetView::Draw(GraphicsContext& graphicsContext)
         _descriptionLabel->SetBackgroundColor(backColor);
         _descriptionLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
         _descriptionLabel->Draw(graphicsContext);
+
+        // Only while there are cheats to disable: on the empty sheet the hint
+        // would advertise a no-op.
+        if (_viewModel->GetState() == CheatsViewModel::State::DisplayCheats)
+        {
+            _promptsLabel->SetBackgroundColor(backColor);
+            _promptsLabel->SetForegroundColor(_materialColorScheme->onSurfaceVariant);
+            _promptsLabel->Draw(graphicsContext);
+        }
 
         if (_viewModel->IsInSubCategory())
         {

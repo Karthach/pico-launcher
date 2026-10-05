@@ -24,6 +24,26 @@ public:
         _buttons[button]->SetAction(action, arg);
     }
 
+    void SetButtonLongAction(int button, IconButtonView::button_action_t longAction)
+    {
+        _buttons[button]->SetLongAction(longAction);
+    }
+
+    void SetButtonEnabled(int button, bool enabled)
+    {
+        _buttons[button]->SetEnabled(enabled);
+    }
+
+    void SetButtonIconColorOverride(int button, const Rgb<8, 8, 8>& color)
+    {
+        _buttons[button]->SetIconColorOverride(color);
+    }
+
+    void ClearButtonIconColorOverride(int button)
+    {
+        _buttons[button]->ClearIconColorOverride();
+    }
+
     Rectangle GetBounds() const override;
     void Update() override;
     SharedPtr<View> MoveFocus(const SharedPtr<View>& currentFocus, FocusMoveDirection direction, View* source) override;

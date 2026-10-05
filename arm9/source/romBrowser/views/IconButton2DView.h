@@ -26,10 +26,15 @@ public:
         _selectorVramOffset = vramToken.GetVramOffset();
     }
 
+    void SetIconHFlip(bool flip = true) { _iconHFlip = flip; }
+    void SetIconVFlip(bool flip = true) { _iconVFlip = flip; }
+
     static VramToken UploadGraphics(IVramManager& vramManager);
 
 private:
-    u32 _selectorVramOffset;
+    u32 _selectorVramOffset = 0;
+    bool _iconHFlip = false;
+    bool _iconVFlip = false;
 
     IconButton2DView(Type type, State state,
         md::sys::color backgroundColor, const MaterialColorScheme* materialColorScheme)

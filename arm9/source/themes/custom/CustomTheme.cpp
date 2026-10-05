@@ -27,6 +27,7 @@
 #define KEY_TOP_BANNER_TEXT_LINE_2      "topBannerTextLine2"
 #define KEY_TOP_FILE_NAME_TEXT          "topFileNameText"
 #define KEY_TOP_COVER                   "topCover"
+#define KEY_TOP_LAUNCH_INFO             "topLaunchInfo"
 #define KEY_GRID_ICON                   "gridIcon"
 #define KEY_BANNER_LIST_ICON            "bannerListIcon"
 #define KEY_BANNER_LIST_TEXT_LINE_0     "bannerListTextLine0"
@@ -37,6 +38,7 @@
 #define KEY_ELEMENT_WIDTH           "width"
 #define KEY_ELEMENT_TEXT_COLOR      "textColor"
 #define KEY_ELEMENT_BLEND_COLOR     "blendColor"
+#define KEY_ELEMENT_HIDDEN          "hidden"
 
 static const CustomThemeInfo sDefaultCustomThemeInfo
 {
@@ -46,6 +48,11 @@ static const CustomThemeInfo sDefaultCustomThemeInfo
     .topBannerTextLine2Info = CustomTopTextElementInfo(Point(70, 155), 176, Rgb8(30, 30, 30), Rgb8(200, 200, 200)),
     .topFileNameTextInfo = CustomTopTextElementInfo(Point(18, 170), 220, Rgb8(30, 30, 30), Rgb8(200, 200, 200)),
     .topCoverInfo = CustomTopCoverInfo(Point(75, 18)),
+    // Only reached when the theme sets "topLaunchInfo" itself: then it is the
+    // top-right corner of the markers' pill. Unset, the view factory puts the
+    // markers at the theme's icon instead. A "topGameCount" key in an older
+    // theme is simply not looked at any more.
+    .topLaunchInfoInfo = CustomTopStripElementInfo(Point(252, 2), false, false),
 
     .gridIconInfo = CustomBottomIconInfo(Rgb8(200, 200, 200)),
 
@@ -137,6 +144,21 @@ static CustomTopCoverInfo parseCustomTopCoverInfo(const JsonObjectConst& json, c
     );
 }
 
+static CustomTopStripElementInfo parseCustomTopStripElementInfo(
+    const JsonObjectConst& json, const CustomTopStripElementInfo& defaultInfo)
+{
+    if (json.isNull())
+    {
+        return defaultInfo;
+    }
+
+    return CustomTopStripElementInfo(
+        parsePoint(json[KEY_ELEMENT_POSITION], defaultInfo.GetPosition()),
+        json[KEY_ELEMENT_HIDDEN] | defaultInfo.GetIsHidden(),
+        true
+    );
+}
+
 static CustomTopTextElementInfo parseCustomTextElementInfo(
     const JsonObjectConst& json, const CustomTopTextElementInfo& defaultInfo)
 {
@@ -167,6 +189,8 @@ static CustomThemeInfo parseCustomThemeInfo(const JsonDocument& json)
         .topFileNameTextInfo = parseCustomTextElementInfo(
             json[KEY_TOP_FILE_NAME_TEXT], sDefaultCustomThemeInfo.topFileNameTextInfo),
         .topCoverInfo = parseCustomTopCoverInfo(json[KEY_TOP_COVER], sDefaultCustomThemeInfo.topCoverInfo),
+        .topLaunchInfoInfo = parseCustomTopStripElementInfo(
+            json[KEY_TOP_LAUNCH_INFO], sDefaultCustomThemeInfo.topLaunchInfoInfo),
 
         .gridIconInfo = parseCustomBottomIconInfo(json[KEY_GRID_ICON], sDefaultCustomThemeInfo.gridIconInfo),
 

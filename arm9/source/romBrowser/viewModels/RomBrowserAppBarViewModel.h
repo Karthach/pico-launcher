@@ -13,6 +13,11 @@ public:
         _romBrowserController->NavigateUp();
     }
 
+    void ShowMenu()
+    {
+        _romBrowserController->ShowMenu();
+    }
+
     void ShowDisplaySettings()
     {
         _romBrowserController->ShowDisplaySettings();

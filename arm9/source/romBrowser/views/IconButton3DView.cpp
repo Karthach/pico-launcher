@@ -5,7 +5,6 @@
 #include "gui/OamBuilder.h"
 #include "gui/input/InputProvider.h"
 #include "iconButtonSelectorTexture.h"
-#include "core/math/RgbMixer.h"
 #include "core/math/ColorConverter.h"
 #include "gui/palette/GradientPalette.h"
 #include "themes/material/MaterialColorScheme.h"
@@ -18,37 +17,22 @@ void IconButton3DView::Draw(GraphicsContext& graphicsContext)
     if (!graphicsContext.IsVisible(GetBounds()))
         return;
 
+    // the circle says whether the button is selected; focus veils it and takes
+    // the icon to the accent (see IconButtonView)
+    auto iconColor = GetDrawnIconColor();
+    Rgb<8, 8, 8> circleColor;
     u32 iconPaletteRow;
-    if (_isFocused || _penDown)
+    if (GetDrawnCircleColor(circleColor))
     {
-        const auto& selectorBaseColor = _materialColorScheme->GetColor(GetCircleBackgroundColor());
-        const auto& fgColor = _materialColorScheme->GetColor(GetForegroundColor());
-        auto selectorColor = RgbMixer::Lerp(selectorBaseColor, fgColor, 12, 100);
-        DrawSelector(graphicsContext, selectorColor);
-
+        DrawSelector(graphicsContext, circleColor);
         iconPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
-            GradientPalette(selectorColor, fgColor), _position.y + 8, _position.y + 24);
+            GradientPalette(circleColor, iconColor), _position.y + 8, _position.y + 24);
     }
     else
     {
-        if (IsCircleBackgroundVisible())
-        {
-            auto circleBgColor = GetCircleBackgroundColor();
-            DrawSelector(graphicsContext, _materialColorScheme->GetColor(circleBgColor));
-            iconPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
-                GradientPalette(
-                    _materialColorScheme->GetColor(circleBgColor),
-                    _materialColorScheme->GetColor(GetForegroundColor())),
-                _position.y + 8, _position.y + 24);
-        }
-        else
-        {
-            iconPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
-                GradientPalette(
-                    _materialColorScheme->GetColor(_backgroundColor),
-                    _materialColorScheme->GetColor(GetForegroundColor())),
-                _position.y + 8, _position.y + 24);
-        }
+        iconPaletteRow = graphicsContext.GetPaletteManager().AllocRow(
+            GradientPalette(_materialColorScheme->GetColor(_backgroundColor), iconColor),
+            _position.y + 8, _position.y + 24);
     }
     gfx_oam_entry_t* iconOam = graphicsContext.GetOamManager().AllocOams(1);
     OamBuilder::OamWithSize<16, 16>(

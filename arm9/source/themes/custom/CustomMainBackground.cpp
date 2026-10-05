@@ -3,6 +3,7 @@
 #include <libtwl/mem/memVram.h>
 #include "gui/Gx.h"
 #include "../ITheme.h"
+#include "ThemeTimeOfDay.h"
 #include "CustomMainBackground.h"
 
 #define BLOCK_VTX_PACK(x, y, z) (((x)&0x3FF) | ((((y) >> 3) & 0x3FF) << 10) | ((z) << 20))
@@ -31,11 +32,14 @@ void CustomMainBackground::LoadResources(const ITheme& theme, const VramContext&
 {
     auto tmpBuf = std::unique_ptr<u8[]>(new(cache_align) u8[256 * 192 * 2]);
     const auto file = std::make_unique<File>();
-    mem_setVramAMapping(MEM_VRAM_AB_LCDC);
-    memset((void*)0x6800000, 0, 256 * 192 * 2);
-    if (theme.OpenThemeFile(*file, "bottombg.bin") && file->ReadExact(tmpBuf.get(), 256 * 192 * 2))
+    bool opened = ThemeTimeOfDay::IsNight() && theme.OpenThemeFile(*file, "bottombg_night.bin");
+    if (opened || theme.OpenThemeFile(*file, "bottombg.bin"))
     {
+        u32 bytesRead = 0;
+        file->Read(tmpBuf.get(), 256 * 192 * 2, bytesRead);
+        mem_setVramAMapping(MEM_VRAM_AB_LCDC);
         memcpy((void*)0x6800000, tmpBuf.get(), 256 * 192 * 2);
+        mem_setVramAMapping(MEM_VRAM_AB_TEX_SLOT_1);
+        file->Close();
     }
-    mem_setVramAMapping(MEM_VRAM_AB_TEX_SLOT_1);
 }

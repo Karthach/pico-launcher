@@ -20,6 +20,12 @@ public:
         return state == RomBrowserState::Browser
             || state == RomBrowserState::GameInfo
             || state == RomBrowserState::DisplaySettings
+            || state == RomBrowserState::Recents
+            || state == RomBrowserState::Favorites
+            || state == RomBrowserState::Statistics
+            || state == RomBrowserState::DeleteConfirm
+            || state == RomBrowserState::Menu
+            || state == RomBrowserState::About
             || state == RomBrowserState::Launching
             || state == RomBrowserState::GoingToSettingsScreen;
     }
@@ -37,6 +43,11 @@ public:
     void NavigateUp()
     {
         _romBrowserController->NavigateUp();
+    }
+
+    void LaunchRandomGame()
+    {
+        _romBrowserController->LaunchRandomGame();
     }
 
 private:

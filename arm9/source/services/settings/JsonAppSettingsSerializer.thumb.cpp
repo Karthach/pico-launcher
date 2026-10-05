@@ -13,8 +13,12 @@
 #define KEY_LANGUAGE                 "language"
 #define KEY_ROM_BROWSER_LAYOUT       "romBrowserLayout"
 #define KEY_ROM_BROWSER_SORT_MODE    "romBrowserSortMode"
+#define KEY_ROM_BROWSER_HIDE_EMPTY_FOLDERS  "romBrowserHideEmptyFolders"
 #define KEY_THEME                    "theme"
 #define KEY_LAST_USED_FILE_PATH      "lastUsedFilePath"
+#define KEY_BACKLIGHT_LEVEL          "backlightLevel"
+#define KEY_SAVE_LOCATION            "saveLocation"
+#define KEY_LAUNCH_TRACKING          "launchTracking"
 #define KEY_FILE_ASSOCIATIONS        "fileAssociations"
 #define KEY_FILE_ASSOCIATIONS_APPLICATION_PATH  "appPath"
 
@@ -33,7 +37,7 @@ static const char* serializeRomBrowserLayout(RomBrowserLayout romBrowserLayout)
         case RomBrowserLayout::CoverFlow:
             return "CoverFlow";
         case RomBrowserLayout::InvertedCoverFlow:
-            return "BannerList";
+            return "InvertedCoverFlow";
         default:
             return "";
     }
@@ -56,7 +60,7 @@ static bool tryParseRomBrowserLayout(
     else if (!strcasecmp(romBrowserLayoutString, "CoverFlow"))
         romBrowserLayout = RomBrowserLayout::CoverFlow;
     else if (!strcasecmp(romBrowserLayoutString, "InvertedCoverFlow"))
-        romBrowserLayout = RomBrowserLayout::BannerList;
+        romBrowserLayout = RomBrowserLayout::InvertedCoverFlow;
     else
         return false;
 
@@ -104,6 +108,34 @@ static bool tryParseRomBrowserSortMode(
     return true;
 }
 
+static const char* serializeSaveLocation(SaveLocation saveLocation)
+{
+    switch (saveLocation)
+    {
+        case SaveLocation::NextToRom:
+            return "rom";
+        case SaveLocation::SavesFolder:
+            return "saves";
+        default:
+            return "";
+    }
+}
+
+static bool tryParseSaveLocation(const char* saveLocationString, SaveLocation& saveLocation)
+{
+    if (!saveLocationString)
+        return false;
+
+    if (!strcasecmp(saveLocationString, "rom"))
+        saveLocation = SaveLocation::NextToRom;
+    else if (!strcasecmp(saveLocationString, "saves"))
+        saveLocation = SaveLocation::SavesFolder;
+    else
+        return false;
+
+    return true;
+}
+
 static bool tryParseFileAssociations(const JsonObjectConst& json, AppSettings* appSettings)
 {
     if (json.isNull())
@@ -140,8 +172,14 @@ static std::unique_ptr<u8[]> writeJson(const AppSettings* appSettings, u32& leng
     json[KEY_LANGUAGE] = appSettings->language.GetString();
     json[KEY_ROM_BROWSER_LAYOUT] = serializeRomBrowserLayout(appSettings->romBrowserDisplaySettings.layout);
     json[KEY_ROM_BROWSER_SORT_MODE] = serializeRomBrowserSortMode(appSettings->romBrowserDisplaySettings.sortMode);
+    json[KEY_ROM_BROWSER_HIDE_EMPTY_FOLDERS] = appSettings->romBrowserDisplaySettings.hideEmptyFolders;
     json[KEY_THEME] = appSettings->theme.GetString();
     json[KEY_LAST_USED_FILE_PATH] = appSettings->lastUsedFilePath.GetString();
+    // only written once the user picked a level; -1 keeps the firmware's
+    if (appSettings->backlightLevel >= 0)
+        json[KEY_BACKLIGHT_LEVEL] = appSettings->backlightLevel;
+    json[KEY_SAVE_LOCATION] = serializeSaveLocation(appSettings->saveLocation);
+    json[KEY_LAUNCH_TRACKING] = appSettings->launchTracking;
     serializeFileAssociations(json, appSettings);
 
     u32 outputSize = measureJsonPretty(json);
@@ -181,6 +219,10 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     appSettings->theme = json[KEY_THEME] | appSettings->theme.GetString();
     appSettings->lastUsedFilePath = json[KEY_LAST_USED_FILE_PATH] | appSettings->lastUsedFilePath.GetString();
 
+    int backlightLevel = json[KEY_BACKLIGHT_LEVEL] | -1;
+    if (backlightLevel >= 0 && backlightLevel <= 3)
+        appSettings->backlightLevel = (s8)backlightLevel;
+
     RomBrowserLayout romBrowserLayout;
     if (tryParseRomBrowserLayout(json[KEY_ROM_BROWSER_LAYOUT].as<const char*>(),
             romBrowserLayout))
@@ -193,6 +235,15 @@ static void readJson(AppSettings* appSettings, const JsonDocument& json)
     {
         appSettings->romBrowserDisplaySettings.sortMode = romBrowserSortMode;
     }
+    appSettings->romBrowserDisplaySettings.hideEmptyFolders =
+        json[KEY_ROM_BROWSER_HIDE_EMPTY_FOLDERS] | appSettings->romBrowserDisplaySettings.hideEmptyFolders;
+
+    SaveLocation saveLocation;
+    if (tryParseSaveLocation(json[KEY_SAVE_LOCATION].as<const char*>(), saveLocation))
+    {
+        appSettings->saveLocation = saveLocation;
+    }
+    appSettings->launchTracking = json[KEY_LAUNCH_TRACKING] | appSettings->launchTracking;
 
     tryParseFileAssociations(json[KEY_FILE_ASSOCIATIONS], appSettings);
 }

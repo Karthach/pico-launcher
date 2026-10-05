@@ -30,7 +30,12 @@ private:
     {
         APP_BAR_BUTTON_BACK = 0,
 
+        // Recents, the favorites and completed filters, delete and the panels
+        // that sat behind long presses are all written out in the menu this
+        // button opens: six buttons down to three, one more than upstream.
+        APP_BAR_BUTTON_MENU,
         APP_BAR_BUTTON_DISPLAY_SETTINGS,
+        // APP_BAR_BUTTON_SETTINGS
     };
 
     RomBrowserAppBarViewModel* _viewModel;

@@ -2,6 +2,7 @@
 #include "IRomBrowserItemViewModel.h"
 
 class IRomBrowserController;
+class FileInfoManager;
 
 class RomBrowserItemViewModel : public IRomBrowserItemViewModel
 {
@@ -11,10 +12,17 @@ public:
 
     void Activate() override;
     void ShowGameInfo() override;
+    void ToggleFavorite() override;
+    void ToggleCompleted() override;
 
     void SetIndex(int index) override
     {
         _index = index;
+    }
+
+    int GetIndex() const override
+    {
+        return _index;
     }
 
     void SetQueueTask(QueueTask<void> queueTask) override
@@ -40,4 +48,6 @@ private:
     QueueTask<void> _queueTask;
 
     IRomBrowserController* _romBrowserController;
+
+    const char* GetGameCode(FileInfoManager& fileInfoManager) const;
 };
