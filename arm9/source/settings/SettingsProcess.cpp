@@ -19,7 +19,8 @@
 /// How long the sheet shows how a delete went before it closes by itself.
 #define DELETE_RESULT_FRAMES    120
 
-SettingsProcess::SettingsProcess(IAppSettingsService& appSettingsService)
+SettingsProcess::SettingsProcess(IAppSettingsService& appSettingsService,
+    ILocalizationService& localizationService)
     : _mainObjPltt(GFX_PLTT_OBJ_MAIN)
     , _mainObjVram(GFX_OBJ_MAIN)
     , _mainObjDialogVram(GFX_OBJ_MAIN, 128 * 1024)
@@ -29,6 +30,7 @@ SettingsProcess::SettingsProcess(IAppSettingsService& appSettingsService)
     , _mainVramContext(nullptr, &_mainObjVram, &_textureVram, &_texturePaletteVram)
     , _subVramContext(nullptr, &_subObjVram, nullptr, nullptr)
     , _appSettingsService(appSettingsService)
+    , _localizationService(localizationService)
     , _inputProvider(&_keyInputSource, &_touchInputSource)
     , _inputRepeater(&_inputProvider,
         InputKey::DpadLeft | InputKey::DpadRight | InputKey::DpadUp | InputKey::DpadDown | InputKey::L | InputKey::R,
@@ -58,11 +60,13 @@ void SettingsProcess::Run()
         _appSettingsService.GetAppSettings().theme);
     _themeListBottomView = ThemeListBottomView::CreateShared(viewModel,
         &_theme->GetMaterialColorScheme(), _theme->GetRomBrowserViewFactory(),
-        _theme->GetThemeFileIconFactory(), &_vblankTextureLoader);
+        _theme->GetThemeFileIconFactory(), &_vblankTextureLoader,
+        _theme->GetFontRepository(), _localizationService);
     _themeListBottomView->InitVram(_mainVramContext);
     _themeListBottomView->Focus(_focusManager);
 
-    _themeListTopView = ThemeListTopView::CreateShared(viewModel, &_theme->GetMaterialColorScheme(), _theme->GetFontRepository());
+    _themeListTopView = ThemeListTopView::CreateShared(viewModel,
+        &_theme->GetMaterialColorScheme(), _theme->GetFontRepository(), _localizationService);
     _themeListTopView->InitVram(_subVramContext);
 
     _ioTaskQueue.StartThread(1, _ioTaskThreadStack, sizeof(_ioTaskThreadStack));
